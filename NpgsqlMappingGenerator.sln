@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{34289ADB-FF35-4014-89B0-7EF70BAA7E4B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NpgsqlMappingGenerator", "src\NpgsqlMappingGenerator\NpgsqlMappingGenerator.csproj", "{5A11865A-959D-44B8-BBBE-91C9CBD41A3B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleProject", "src\SampleProject\SampleProject.csproj", "{8A3188AB-881F-4C3D-AD34-D74AFB9312F7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5A11865A-959D-44B8-BBBE-91C9CBD41A3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A11865A-959D-44B8-BBBE-91C9CBD41A3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A11865A-959D-44B8-BBBE-91C9CBD41A3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A11865A-959D-44B8-BBBE-91C9CBD41A3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A3188AB-881F-4C3D-AD34-D74AFB9312F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A3188AB-881F-4C3D-AD34-D74AFB9312F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A3188AB-881F-4C3D-AD34-D74AFB9312F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A3188AB-881F-4C3D-AD34-D74AFB9312F7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5A11865A-959D-44B8-BBBE-91C9CBD41A3B} = {34289ADB-FF35-4014-89B0-7EF70BAA7E4B}
+		{8A3188AB-881F-4C3D-AD34-D74AFB9312F7} = {34289ADB-FF35-4014-89B0-7EF70BAA7E4B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CA350461-6428-43B3-A4B8-630E54D8AC71}
+	EndGlobalSection
+EndGlobal
