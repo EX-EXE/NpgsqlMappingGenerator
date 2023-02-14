@@ -41,7 +41,6 @@ internal sealed class {{Common.DbColumnAttributeName}}<T> : Attribute
 """);
     }
 
-    private record DbColumnInfo(string PropertyType, string PropertyName, string Query, string ConverterType, string InsertDefault, string UpdateDefault);
     public static void GenerateSource(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
     {
         var cancellationToken = context.CancellationToken;
@@ -52,111 +51,34 @@ internal sealed class {{Common.DbColumnAttributeName}}<T> : Attribute
             return;
         }
         var classInfo = AnalyzeClassInfo.Analyze(typeSymbol, cancellationToken);
+        var dbTableName = classInfo.GetDbTableName();
 
+        // DbColumns
         var dbQueryInfos = new List<DbColumnInfo>();
         var dbColumnInfos = new List<DbColumnInfo>();
         var dbAggregateInfos = new List<DbColumnInfo>();
+        var dbAutoCreateInfos = new List<DbAutoCreateInfo>();
         foreach (var propertyInfo in classInfo.Properties)
         {
-            var columnAttribute = propertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbColumnAttributeName}");
-            if (columnAttribute == default)
+            var columnInfo = propertyInfo.GetDbColumnInfo();
+            if (columnInfo == null)
             {
                 continue;
             }
-            var propertyType = propertyInfo.Type.FullNameWithGenerics;
-            var propertyName = propertyInfo.Name;
-            var columnName = columnAttribute.ArgumentObjects.OfType<string>().First();
-            var converterType = columnAttribute.GenericTypes.First().FullNameWithGenerics;
-            var insertDefault = string.Empty;
-            var updateDefault = string.Empty;
-
-            var autoCreateAttribute = propertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbAutoCreateAttribute}");
-            if (autoCreateAttribute != default)
-            {
-                var autoCreateClass = autoCreateAttribute.GenericTypes.First().FullNameWithGenerics;
-                var autoCreateArgument = autoCreateAttribute.ArgumentStrings.FirstOrDefault();
-                if (autoCreateArgument.Contains(Common.DbAutoCreateType_Insert))
-                {
-                    insertDefault = $"{autoCreateClass}.CreateInsertValue()";
-                }
-                if (autoCreateArgument.Contains(Common.DbAutoCreateType_Update))
-                {
-                    updateDefault = $"{autoCreateClass}.CreateUpdateValue()";
-                }
-            }
-
             // Column
-            var columnInfo = new DbColumnInfo(propertyType, propertyName, columnName, converterType, insertDefault, updateDefault);
             dbQueryInfos.Add(columnInfo);
             dbColumnInfos.Add(columnInfo);
-
             // Aggregate
-            var aggregateAttribute = propertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbAggregateAttributeName}");
-            if (aggregateAttribute != default)
+            var aggregateInfos = propertyInfo.GetDbAggregateInfos(columnInfo);
+            dbQueryInfos.AddRange(aggregateInfos);
+            dbAggregateInfos.AddRange(aggregateInfos);
+            // AutoCreate
+            var autoCreateInfo = propertyInfo.GetDbAutoCreateInfos();
+            if (autoCreateInfo != null)
             {
-                var aggregateArgument = aggregateAttribute.ArgumentStrings.FirstOrDefault();
-                if (aggregateArgument.Contains(Common.DbAggregateType_Count))
-                {
-                    var info = new DbColumnInfo("long", $"{propertyName}Count", $"count({columnName})", $"{Common.Namespace}.DbParamLong", string.Empty, string.Empty);
-                    dbQueryInfos.Add(info);
-                    dbAggregateInfos.Add(info);
-                }
-                if (aggregateArgument.Contains(Common.DbAggregateType_Avg))
-                {
-                    var info = new DbColumnInfo("double", $"{propertyName}Avg", $"avg({columnName})", $"{Common.Namespace}.DbParamDouble", string.Empty, string.Empty);
-                    dbQueryInfos.Add(info);
-                    dbAggregateInfos.Add(info);
-                }
-                if (aggregateArgument.Contains(Common.DbAggregateType_Max))
-                {
-                    var info = new DbColumnInfo(propertyType, $"{propertyName}Max", $"max({columnName})", converterType, string.Empty, string.Empty);
-                    dbQueryInfos.Add(info);
-                    dbAggregateInfos.Add(info);
-                }
-                if (aggregateArgument.Contains(Common.DbAggregateType_Min))
-                {
-                    var info = new DbColumnInfo(propertyType, $"{propertyName}Min", $"min({columnName})", converterType, string.Empty, string.Empty);
-                    dbQueryInfos.Add(info);
-                    dbAggregateInfos.Add(info);
-                }
+                dbAutoCreateInfos.Add(autoCreateInfo);
             }
         }
-
-        // DbParam
-        var dbParams = new StringBuilder();
-        foreach (var dbQueryInfo in dbQueryInfos)
-        {
-            var defaultValue = dbQueryInfo.PropertyType == "string" || dbQueryInfo.PropertyType == "System.String"
-                ? "string.Empty"
-                : "default";
-            dbParams.AppendLine($$"""
-    public class DbParam{{dbQueryInfo.PropertyName}} : IDbParam
-    {
-        public DbColumnQueryType QueryType => DbColumnQueryType.{{dbQueryInfo.PropertyName}};
-        public string DbTable => DbTableName;
-        public string DbQuery => GetDbColumnQuery(QueryType);
-        public {{dbQueryInfo.PropertyType}} Value { get; private set; } = {{defaultValue}};
-
-        public static DbParam{{dbQueryInfo.PropertyName}} Create({{dbQueryInfo.PropertyType}} value)
-        {
-            return new DbParam{{dbQueryInfo.PropertyName}}(value);
-        }
-        public DbParam{{dbQueryInfo.PropertyName}}()
-        {
-        }
-        public DbParam{{dbQueryInfo.PropertyName}}({{dbQueryInfo.PropertyType}} value)
-        {
-            Value = value;
-        }
-        public NpgsqlParameter CreateParameter(string name)
-        {
-            return {{dbQueryInfo.ConverterType}}.CreateParameter(name, Value);
-        }
-    }
-
-""");
-        }
-
 
         // Source
         var sourceCode = $$"""
@@ -178,217 +100,15 @@ using {{Common.Namespace}};
 
 partial class {{classInfo.Type.ShortName}}
 {
-    public static readonly string DbTableName = "{{classInfo.Attributes.Where(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbTableAttributeName}").First().ArgumentObjects.OfType<string>().First()}}";
-{{dbAggregateInfos.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; }""").OutputLine(1)}}
+{{OutputSource.CreateDbTableProperty(classInfo)}}
+{{OutputSource.CreateProperty(dbAggregateInfos)}}
+{{OutputSource.CreateDbColumnType(dbColumnInfos,dbQueryInfos)}}
+{{OutputSource.CreateDbParam(dbQueryInfos)}}
 
-    [Flags]
-    public enum DbColumnQueryType
-    {
-{{dbQueryInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = 1 << {i + 1},").OutputLine(2)}}
-        None = 0,
-        All = {{dbQueryInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
-    }
-    [Flags]
-    public enum DbColumnType
-    {
-{{dbColumnInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = DbColumnQueryType.{x.PropertyName},").OutputLine(2)}}
-        None = 0,
-        All = {{dbColumnInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
-    }
-    public static readonly DbColumnQueryType[] DbColumnQueryTypes = {
-{{dbQueryInfos.ForEachLines(x => $"DbColumnQueryType.{x.PropertyName},").OutputLine(3)}}
-        };
-    public static string GetDbColumnQuery(DbColumnQueryType queryType)
-        => queryType switch
-        {
-{{dbQueryInfos.ForEachLines(x => $"DbColumnQueryType.{x.PropertyName} => \"{x.Query}\",").OutputLine(3)}}
-            _ => throw new NotImplementedException(),
-        };
+{{OutputSource.CreateDbCondition()}}
+{{OutputSource.CreateDbOrder()}}
 
-    public interface IDbCondition
-    {
-        string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal);
-    }
-    public class DbConditions : IDbCondition
-    {
-        public DbLogicOperator Logic { get; set; } = DbLogicOperator.And;
-        public IDbCondition[] Conditions { get; set; } = Array.Empty<IDbCondition>();
-
-        public static DbConditions Create(DbLogicOperator logicOperator,params IDbCondition[] conditions)
-        {
-            return new DbConditions(logicOperator,conditions);
-        }
-        public DbConditions()
-        {
-        }
-        public DbConditions(DbLogicOperator logicOperator,IEnumerable<IDbCondition> conditions)
-        {
-            Logic = logicOperator;
-            Conditions = conditions.ToArray();
-        }
-        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
-        {
-            var queryList = new List<string>(Conditions.Length);
-            foreach (var condition in Conditions)
-            {
-                queryList.Add(condition.CreateQueryAndParameter(ref parameterList, ref ordinal));
-            }
-            return $"({string.Join(Logic.ToQuery(), queryList)})";
-        }
-    }
-    public class DbCondition : IDbCondition
-    {
-        public DbCompareOperator Operator { get; set; } = DbCompareOperator.Equals;
-        public IDbParam? Param { get; set; } = default;
-
-        public static DbCondition Create(DbCompareOperator compareOperator ,IDbParam? param)
-        {
-            return new DbCondition(compareOperator,param);
-        }
-        public DbCondition()
-        {
-        }
-        public DbCondition(DbCompareOperator compareOperator ,IDbParam? param)
-        {
-            Operator = compareOperator;
-            Param = param;
-        }
-        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
-        {
-            var paramName = $"@{Param.DbQuery}{ordinal++}";
-            parameterList.Add(Param.CreateParameter(paramName));
-            return $"({Param.DbQuery} {Operator.ToQuery()} {paramName})";
-        }
-    }
-
-
-    public interface IDbOrder
-    {
-        string CreateQuery();
-    }
-    public class DbOrders : IDbOrder
-    {
-        public DbOrder[] Orders { get; set; } = Array.Empty<DbOrder>();
-        public static DbOrders Create(params DbOrder[] orders)
-        {
-            return new DbOrders(orders);
-        }
-        public DbOrders()
-        {
-        }
-        public DbOrders(IEnumerable<DbOrder> orders)
-        {
-            Orders = orders.ToArray();
-        }
-        public string CreateQuery()
-            => string.Join(',', Orders.Select(x => x.CreateQuery()));
-    }
-    public class DbOrder : IDbOrder
-    {
-        public DbOrderType Order { get; set; } = DbOrderType.Asc;
-        public DbColumnQueryType QueryType { get; set; }
-        
-        public static DbOrder Create(DbOrderType orderType ,DbColumnQueryType queryType)
-        {
-            return new DbOrder(orderType,queryType);
-        }
-        public DbOrder()
-        {
-        }
-        public DbOrder(DbOrderType orderType ,DbColumnQueryType queryType)
-        {
-            Order = orderType;
-            QueryType = queryType;
-        }
-        public string CreateQuery()
-            => $"{GetDbColumnQuery(QueryType)} {Order.ToQuery()}";
-    }
-
-    public interface IDbParam
-    {
-        DbColumnQueryType QueryType { get; }
-        string DbTable { get; }
-        string DbQuery { get; }
-        NpgsqlParameter CreateParameter(string paramName);
-    }
-{{dbParams}}
-
-    public static async IAsyncEnumerable<{{classInfo.Type.ShortName}}> SelectAsync(
-        NpgsqlConnection connection,
-        DbColumnType distinctColumns = DbColumnType.None,
-        DbColumnQueryType selectColumns = DbColumnQueryType.None,
-        IDbCondition? where = null,
-        IDbCondition? having = null,
-        IDbOrder? order = null,
-        long limit = 0,
-        long offset = 0,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var parameters = new List<NpgsqlParameter>();
-
-        var sqlBuilder = new StringBuilder("SELECT");
-
-        var distinctColumnQueries = new List<string>();
-        var selectColumnQueries = new List<string>();
-        var distinctQueryType = (DbColumnQueryType)distinctColumns;
-        foreach (var columnQueryTypes in DbColumnQueryTypes)
-        {
-            if (distinctQueryType.HasFlag(columnQueryTypes))
-            {
-                distinctColumnQueries.Add(GetDbColumnQuery(columnQueryTypes));
-            }
-            if (selectColumns.HasFlag(columnQueryTypes))
-            {
-                selectColumnQueries.Add(GetDbColumnQuery(columnQueryTypes));
-            }
-        }
-        if (0 < distinctColumnQueries.Count)
-        {
-            sqlBuilder.Append($" DISTINCT ON ({string.Join(",", distinctColumnQueries)})");
-        }
-        if (0 < selectColumnQueries.Count)
-        {
-            sqlBuilder.Append($" {string.Join(",", selectColumnQueries)}");
-        }
-        sqlBuilder.Append($" FROM {DbTableName}");
-        int conditionOrdinal = 0;
-        if (where != null)
-        {
-            sqlBuilder.Append($" WHERE {where.CreateQueryAndParameter(ref parameters, ref conditionOrdinal)}");
-        }
-        if (having != null)
-        {
-            sqlBuilder.Append($" HAVING {having.CreateQueryAndParameter(ref parameters, ref conditionOrdinal)}");
-        }
-        if (order != null)
-        {
-            sqlBuilder.Append($" ORDER BY {order.CreateQuery()}");
-        }
-        if (0 < limit)
-        {
-            sqlBuilder.Append($" LIMIT {limit}");
-        }
-        if (0 < offset)
-        {
-            sqlBuilder.Append($" OFFSET {offset}");
-        }
-
-        await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
-        foreach (var parameter in parameters)
-        {
-            command.Parameters.Add(parameter);
-        }
-        await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        {
-            int readerOrdinal = 0;
-            var result = new {{classInfo.Type.ShortName}}();
-{{dbQueryInfos.ForEachLines(x => $"selectColumns.HasFlag(DbColumnQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
-            yield return result;
-        }
-    }
+{{OutputSource.CreateDbSelect(classInfo.Type.ShortName, dbQueryInfos)}}
 
     public static async ValueTask<int> InsertAsync(
         NpgsqlConnection connection,
@@ -402,7 +122,7 @@ partial class {{classInfo.Type.ShortName}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{dbColumnInfos.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}
+{{dbAutoCreateInfos.Where(x => !string.IsNullOrEmpty(x.InsertFunc)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertFunc}));").OutputLine(2)).OutputLine()}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -437,7 +157,7 @@ partial class {{classInfo.Type.ShortName}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{dbColumnInfos.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}
+{{dbAutoCreateInfos.Where(x => !string.IsNullOrEmpty(x.UpdateFunc)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateFunc}));").OutputLine(2)).OutputLine()}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -483,28 +203,6 @@ partial class {{classInfo.Type.ShortName}}
         }
         await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
         return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    public static IAsyncEnumerable<{{classInfo.Type.ShortName}}> SelectAsync(
-        NpgsqlConnection connection,
-        DbColumnQueryType selectColumns,
-        IDbCondition? where = null,
-        IDbCondition? having = null,
-        IDbOrder? order = null,
-        long limit = 0,
-        long offset = 0,
-        CancellationToken cancellationToken = default)
-    {
-        return SelectAsync(
-            connection,
-            DbColumnType.None,
-            selectColumns,
-            where,
-            having,
-            order,
-            limit,
-            offset,
-            cancellationToken);
     }
 }
 

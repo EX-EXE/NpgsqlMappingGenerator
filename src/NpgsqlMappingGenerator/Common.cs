@@ -13,11 +13,50 @@ namespace NpgsqlMappingGenerator
         public static readonly string DbTableAttributeName = $"DbTableGeneratorAttribute";
         public static readonly string DbColumnAttributeName = $"DbColumnAttribute";
 
+        public static readonly string DbViewAttributeName = $"DbViewGeneratorAttribute";
+        public static readonly string DbViewTableAttributeName = $"DbViewTableAttribute";
+        public static readonly string DbViewColumnAttributeName = $"DbViewColumnAttribute";
+
+
+        public static readonly string DbViewInnerJoinAttributeName = $"DbViewInnerJoinAttribute";
+        public static readonly string DbViewLeftOuterJoinAttributeName = $"DbViewLeftOuterJoinAttributeName";
+        public static readonly string DbViewRightOuterJoinAttributeName = $"DbViewRightOuterJoinAttributeName";
+        public static readonly string DbViewFullOuterJoinAttributeName = $"DbViewFullOuterJoinAttributeName";
+        public static readonly string DbViewCrossJoinAttributeName = $"DbViewCrossJoinAttributeName";
+
+        public static readonly string DbViewInnerJoinAttributeFullName = $"{Namespace}.{DbViewInnerJoinAttributeName}";
+        public static readonly string DbViewLeftOuterJoinAttributeFullName = $"{Namespace}.{DbViewLeftOuterJoinAttributeName}";
+        public static readonly string DbViewRightOuterJoinAttributeFullName = $"{Namespace}.{DbViewRightOuterJoinAttributeName}";
+        public static readonly string DbViewFullOuterJoinAttributeFullName = $"{Namespace}.{DbViewFullOuterJoinAttributeName}";
+        public static readonly string DbViewCrossJoinAttributeFulleName = $"{Namespace}.{DbViewCrossJoinAttributeName}";
+        public static readonly string[] DbViewInnerOrOuterJoinAttributeFullNames = new[]
+            {
+                DbViewInnerJoinAttributeFullName,
+                DbViewLeftOuterJoinAttributeFullName ,
+                DbViewRightOuterJoinAttributeFullName,
+                DbViewFullOuterJoinAttributeFullName ,
+            };
+        public static readonly string[] DbViewJoinAttributeFullNames = new[]
+            {
+                DbViewInnerJoinAttributeFullName,
+                DbViewLeftOuterJoinAttributeFullName ,
+                DbViewRightOuterJoinAttributeFullName,
+                DbViewFullOuterJoinAttributeFullName ,
+                DbViewCrossJoinAttributeFulleName ,
+            };
+
+
         public static readonly string DbAggregateAttributeName = $"DbAggregateAttribute";
-        public static readonly string DbAggregateType_Avg = $"Avg";
-        public static readonly string DbAggregateType_Count = $"Count";
-        public static readonly string DbAggregateType_Max = $"Max";
-        public static readonly string DbAggregateType_Min = $"Min";
+        public static readonly string DbAggregateName_None = $"None";
+        public static readonly string DbAggregateName_Avg = $"Avg";
+        public static readonly string DbAggregateName_Count = $"Count";
+        public static readonly string DbAggregateName_Max = $"Max";
+        public static readonly string DbAggregateName_Min = $"Min";
+        public static readonly int DbAggregateValue_None    = 0;
+        public static readonly int DbAggregateValue_Avg     = 1 << 0;
+        public static readonly int DbAggregateValue_Count   = 1 << 1;
+        public static readonly int DbAggregateValue_Max     = 1 << 2;
+        public static readonly int DbAggregateValue_Min     = 1 << 3;
 
         public static readonly string DbAutoCreateAttribute = $"DbAutoCreateAttribute";
         public static readonly string DbAutoCreateType_Insert = $"Insert";
@@ -97,10 +136,11 @@ using System;
 [Flags]
 public enum DbAggregateType
 {
-    {{DbAggregateType_Avg}}     = 1 << 1,
-    {{DbAggregateType_Count}}   = 1 << 2,
-    {{DbAggregateType_Max}}     = 1 << 3,
-    {{DbAggregateType_Min}}     = 1 << 4,
+    {{DbAggregateName_None}}    = {{DbAggregateValue_None}},
+    {{DbAggregateName_Avg}}     = {{DbAggregateValue_Avg}},
+    {{DbAggregateName_Count}}   = {{DbAggregateValue_Count}},
+    {{DbAggregateName_Max}}     = {{DbAggregateValue_Max}},
+    {{DbAggregateName_Min}}     = {{DbAggregateValue_Min}},
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 internal sealed class {{Common.DbAggregateAttributeName}} : Attribute
@@ -228,6 +268,7 @@ public class DbParamString
 }
 """);
         }
+
 
     }
 }

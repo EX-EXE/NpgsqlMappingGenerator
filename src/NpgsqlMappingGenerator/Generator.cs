@@ -27,6 +27,7 @@ public partial class Generator : IIncrementalGenerator
             Common.GenerateDbBase(context);
             Common.GenerateDbParam(context);
             DbTable.GenerateAttribute(context);
+            DbView.GenerateAttribute(context);
         });
 
         // DbTable Hook
@@ -35,5 +36,12 @@ public partial class Generator : IIncrementalGenerator
         static (node, token) => true,
         static (context, token) => context);
         context.RegisterSourceOutput(dbTableSource, DbTable.GenerateSource);
+
+        // DbView Hook
+        var dbViewSource = context.SyntaxProvider.ForAttributeWithMetadataName(
+        $"{Common.Namespace}.{Common.DbViewAttributeName}",
+        static (node, token) => true,
+        static (context, token) => context);
+        context.RegisterSourceOutput(dbViewSource, DbView.GenerateSource);
     }
 }
