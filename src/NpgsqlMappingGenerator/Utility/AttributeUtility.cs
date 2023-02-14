@@ -7,21 +7,16 @@ using CodeAnalyzeUtility;
 using System.Linq;
 using System.Reflection;
 
-namespace NpgsqlMappingGenerator
+namespace NpgsqlMappingGenerator.Utility
 {
     internal record class DbTableJoinInfo(string DbTableName, string DbColumnName);
     internal record DbColumnInfo(string PropertyType, string PropertyName, string Query, string ConverterType);
     internal record DbAutoCreateInfo(string PropertyName, string InsertFunc, string UpdateFunc);
-    internal static class Attribute
+    internal static class AttributeUtility
     {
-        //public static string GetDbTableName(this AnalyzeClassInfo analyzeClassInfo)
-        //{
-        //    return analyzeClassInfo.Attributes.Where(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbTableAttributeName}").First().ArgumentObjects.OfType<string>().First();
-        //}
-
-        public static DbColumnInfo? GetDbColumnInfo(this AnalyzePropertyInfo analyzePropertyInfo,string dbTableName = "")
+        public static DbColumnInfo? GetDbColumnInfo(this AnalyzePropertyInfo analyzePropertyInfo, string dbTableName = "")
         {
-            var columnAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbColumnAttributeName}");
+            var columnAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbColumnAttributeName}");
             if (columnAttribute != default)
             {
                 var propertyType = analyzePropertyInfo.Type.FullNameWithGenerics;
@@ -37,16 +32,16 @@ namespace NpgsqlMappingGenerator
         {
             var insertDefault = string.Empty;
             var updateDefault = string.Empty;
-            var autoCreateAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbAutoCreateAttribute}");
+            var autoCreateAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbAutoCreateAttributeName}");
             if (autoCreateAttribute != default)
             {
                 var autoCreateClass = autoCreateAttribute.GenericTypes.First().FullNameWithGenerics;
                 var autoCreateArgument = autoCreateAttribute.ArgumentStrings.FirstOrDefault();
-                if (autoCreateArgument.Contains(Common.DbAutoCreateType_Insert))
+                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateType_Insert))
                 {
                     insertDefault = $"{autoCreateClass}.CreateInsertValue()";
                 }
-                if (autoCreateArgument.Contains(Common.DbAutoCreateType_Update))
+                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateType_Update))
                 {
                     updateDefault = $"{autoCreateClass}.CreateUpdateValue()";
                 }
@@ -60,22 +55,22 @@ namespace NpgsqlMappingGenerator
         public static DbColumnInfo[] GetDbAggregateInfos(this DbColumnInfo columnInfo, int aggregateNum)
         {
             var result = new List<DbColumnInfo>();
-            if ((aggregateNum & Common.DbAggregateValue_Count) != 0)
+            if ((aggregateNum & CommonDefine.DbAggregateValue_Count) != 0)
             {
-                var info = new DbColumnInfo("long", $"{columnInfo.PropertyName}Count", $"count({columnInfo.Query})", $"{Common.Namespace}.DbParamLong");
+                var info = new DbColumnInfo("long", $"{columnInfo.PropertyName}Count", $"count({columnInfo.Query})", $"{CommonDefine.Namespace}.DbParamLong");
                 result.Add(info);
             }
-            if ((aggregateNum & Common.DbAggregateValue_Avg) != 0)
+            if ((aggregateNum & CommonDefine.DbAggregateValue_Avg) != 0)
             {
-                var info = new DbColumnInfo("double", $"{columnInfo.PropertyName}Avg", $"avg({columnInfo.Query})", $"{Common.Namespace}.DbParamDouble");
+                var info = new DbColumnInfo("double", $"{columnInfo.PropertyName}Avg", $"avg({columnInfo.Query})", $"{CommonDefine.Namespace}.DbParamDouble");
                 result.Add(info);
             }
-            if ((aggregateNum & Common.DbAggregateValue_Max) != 0)
+            if ((aggregateNum & CommonDefine.DbAggregateValue_Max) != 0)
             {
                 var info = new DbColumnInfo(columnInfo.PropertyType, $"{columnInfo.PropertyName}Max", $"max({columnInfo.Query})", columnInfo.ConverterType);
                 result.Add(info);
             }
-            if ((aggregateNum & Common.DbAggregateValue_Min) != 0)
+            if ((aggregateNum & CommonDefine.DbAggregateValue_Min) != 0)
             {
                 var info = new DbColumnInfo(columnInfo.PropertyType, $"{columnInfo.PropertyName}Min", $"min({columnInfo.Query})", columnInfo.ConverterType);
                 result.Add(info);
@@ -84,13 +79,13 @@ namespace NpgsqlMappingGenerator
         }
         public static DbColumnInfo[] GetDbAggregateInfos(this AnalyzePropertyInfo analyzePropertyInfo, DbColumnInfo columnInfo)
         {
-            var aggregateAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbAggregateAttributeName}");
+            var aggregateAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbAggregateAttributeName}");
             if (aggregateAttribute != default)
             {
                 var aggregateArgument = aggregateAttribute.ArgumentObjects.FirstOrDefault();
                 if (aggregateArgument is int aggregateNum)
                 {
-                    return GetDbAggregateInfos(columnInfo, aggregateNum);
+                    return columnInfo.GetDbAggregateInfos(aggregateNum);
                 }
             }
             return Array.Empty<DbColumnInfo>();
@@ -98,12 +93,12 @@ namespace NpgsqlMappingGenerator
 
         public static string GetDbTableName(this AnalyzeClassInfo analyzeClassInfo)
         {
-            var dbTableAttribute = analyzeClassInfo.Attributes.First(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbTableAttributeName}");
+            var dbTableAttribute = analyzeClassInfo.Attributes.First(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}");
             return dbTableAttribute.ArgumentObjects.OfType<string>().First();
         }
         public static string GetDbViewTableName(this AnalyzeClassInfo analyzeClassInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
         {
-            var viewTableAttribute = analyzeClassInfo.Attributes.First(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbViewTableAttributeName}");
+            var viewTableAttribute = analyzeClassInfo.Attributes.First(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbViewTableAttributeName}");
             var viewTableType = viewTableAttribute.GenericTypes.First();
             if (cacheClassInfoDict.TryGetValue(viewTableType.FullNameWithGenerics, out var classInfo))
             {
@@ -114,7 +109,7 @@ namespace NpgsqlMappingGenerator
         }
         public static string GetDbColumnName(this AnalyzePropertyInfo analyzePropertyInfo)
         {
-            var dbTableAttribute = analyzePropertyInfo.Attributes.First(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbColumnAttributeName}");
+            var dbTableAttribute = analyzePropertyInfo.Attributes.First(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbColumnAttributeName}");
             return dbTableAttribute.ArgumentObjects.OfType<string>().First();
         }
 
@@ -123,7 +118,7 @@ namespace NpgsqlMappingGenerator
             var result = new List<string>();
             foreach (var attribute in analyzeClassInfo.Attributes)
             {
-                if (Common.DbViewInnerOrOuterJoinAttributeFullNames.Contains(attribute.Type.FullName))
+                if (CommonDefine.DbViewInnerOrOuterJoinAttributeFullNames.Contains(attribute.Type.FullName))
                 {
                     var joins = attribute.GetDbTableJoinInfosFromwInnerOrOuterJoinAttribute(cacheClassInfoDict);
                     if (joins.Length < 2)
@@ -133,7 +128,7 @@ namespace NpgsqlMappingGenerator
                     var query = $"{attribute.GetDbTableJoinPrefixQuery()} {joins[0].DbTableName} ON {joins[0].DbTableName}.{joins[0].DbColumnName} = {joins[1].DbTableName}.{joins[1].DbColumnName}";
                     result.Add(query);
                 }
-                else if (Common.DbViewCrossJoinAttributeFulleName == attribute.Type.FullName)
+                else if (CommonDefine.DbViewCrossJoinAttributeFullName == attribute.Type.FullName)
                 {
                     var query = $"{attribute.GetDbTableJoinPrefixQuery()} {attribute.GetDbTableNameFromCrossJoinAttribute(cacheClassInfoDict)}";
                     result.Add(query);
@@ -142,7 +137,7 @@ namespace NpgsqlMappingGenerator
             return string.Join(" ", result);
         }
 
-        public static string GetDbTableNameFromCrossJoinAttribute(this CodeAnalyzeUtility.AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
+        public static string GetDbTableNameFromCrossJoinAttribute(this AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
         {
             if (0 < analyzeAttributeInfo.GenericTypes.Length &&
                 cacheClassInfoDict.TryGetValue(analyzeAttributeInfo.GenericTypes[0].FullNameWithGenerics, out var analyzeClassInfo))
@@ -153,7 +148,7 @@ namespace NpgsqlMappingGenerator
         }
 
 
-        public static DbTableJoinInfo[] GetDbTableJoinInfosFromwInnerOrOuterJoinAttribute(this CodeAnalyzeUtility.AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
+        public static DbTableJoinInfo[] GetDbTableJoinInfosFromwInnerOrOuterJoinAttribute(this AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
         {
             var result = new List<DbTableJoinInfo>();
             foreach (var (genericType, argObj) in analyzeAttributeInfo.GenericTypes.Zip(analyzeAttributeInfo.ArgumentObjects, (x, y) => (x, y)))
@@ -172,25 +167,25 @@ namespace NpgsqlMappingGenerator
             }
             return result.ToArray();
         }
-        public static string GetDbTableJoinPrefixQuery(this CodeAnalyzeUtility.AnalyzeAttributeInfo analyzeAttributeInfo)
+        public static string GetDbTableJoinPrefixQuery(this AnalyzeAttributeInfo analyzeAttributeInfo)
         {
-            if (analyzeAttributeInfo.Type.FullName == $"{Common.Namespace}.{Common.DbViewInnerJoinAttributeName}")
+            if (analyzeAttributeInfo.Type.FullName == CommonDefine.DbViewInnerJoinAttributeFullName)
             {
                 return $"INNER JOIN";
             }
-            else if (analyzeAttributeInfo.Type.FullName == $"{Common.Namespace}.{Common.DbViewLeftOuterJoinAttributeName}")
+            else if (analyzeAttributeInfo.Type.FullName == CommonDefine.DbViewLeftOuterJoinAttributeFullName)
             {
                 return $"LEFT OUTER JOIN";
             }
-            else if (analyzeAttributeInfo.Type.FullName == $"{Common.Namespace}.{Common.DbViewRightOuterJoinAttributeName}")
+            else if (analyzeAttributeInfo.Type.FullName == CommonDefine.DbViewRightOuterJoinAttributeFullName)
             {
                 return $"RIGHT OUTER JOIN";
             }
-            else if (analyzeAttributeInfo.Type.FullName == $"{Common.Namespace}.{Common.DbViewFullOuterJoinAttributeName}")
+            else if (analyzeAttributeInfo.Type.FullName == CommonDefine.DbViewFullOuterJoinAttributeFullName)
             {
                 return $"FULL OUTER JOIN";
             }
-            else if (analyzeAttributeInfo.Type.FullName == $"{Common.Namespace}.{Common.DbViewCrossJoinAttributeName}")
+            else if (analyzeAttributeInfo.Type.FullName == CommonDefine.DbViewCrossJoinAttributeFullName)
             {
                 return $"CROSS JOIN";
             }

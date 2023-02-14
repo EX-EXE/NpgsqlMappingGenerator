@@ -1,6 +1,7 @@
 ﻿using CodeAnalyzeUtility;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NpgsqlMappingGenerator.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,89 +10,97 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace NpgsqlMappingGenerator;
+namespace NpgsqlMappingGenerator.Generator;
 
-public static class DbView
+public static class DbViewGenerator
 {
     private static readonly string[] DbViewAttributeNames = new[]
     {
-        $"{Common.Namespace}.{Common.DbTableAttributeName}",
-        $"{Common.Namespace}.{Common.DbViewInnerJoinAttributeName}",
-        $"{Common.Namespace}.{Common.DbViewLeftOuterJoinAttributeName}",
-        $"{Common.Namespace}.{Common.DbViewRightOuterJoinAttributeName}",
-        $"{Common.Namespace}.{Common.DbViewFullOuterJoinAttributeName}",
-        $"{Common.Namespace}.{Common.DbViewCrossJoinAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbViewInnerJoinAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbViewLeftOuterJoinAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbViewRightOuterJoinAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbViewFullOuterJoinAttributeName}",
+        $"{CommonDefine.Namespace}.{CommonDefine.DbViewCrossJoinAttributeName}",
     };
 
+    /// <summary>
+    /// Attribute
+    /// </summary>
+    /// <param name="context"></param>
     public static void GenerateAttribute(IncrementalGeneratorPostInitializationContext context)
     {
         // DbView
-        context.AddSource($"{Common.Namespace}.{Common.DbViewAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        context.AddSource($"{CommonDefine.DbViewAttributeFullName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbViewAttributeName}} : Attribute
+internal sealed class {{CommonDefine.DbViewAttributeName}} : Attribute
 {
-    public {{Common.DbViewAttributeName}}()
+    public {{CommonDefine.DbViewAttributeName}}()
     {
     }
 }
 """);
-        context.AddSource($"{Common.Namespace}.{Common.DbViewTableAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        // DbViewTable
+        context.AddSource($"{CommonDefine.DbViewTableAttributeFullName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbViewTableAttributeName}}<TableClass> : Attribute
+internal sealed class {{CommonDefine.DbViewTableAttributeName}}<TableClass> : Attribute
 {
-    public {{Common.DbViewTableAttributeName}}()
+    public {{CommonDefine.DbViewTableAttributeName}}()
     {
     }
 }
 """);
-        context.AddSource($"{Common.Namespace}.{Common.DbViewColumnAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        // DbViewColumn
+        context.AddSource($"{CommonDefine.DbViewColumnAttributeFullName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-internal sealed class {{Common.DbViewColumnAttributeName}}<TableClass> : Attribute
+internal sealed class {{CommonDefine.DbViewColumnAttributeName}}<TableClass> : Attribute
 {
-    public {{Common.DbViewColumnAttributeName}}(string columnProperty,DbAggregateType aggregateType = DbAggregateType.None)
+    public {{CommonDefine.DbViewColumnAttributeName}}(string columnProperty,DbAggregateType aggregateType = DbAggregateType.None)
     {
     }
 }
 """);
 
-        // Join
-        foreach (var joinAttributeName in new[] {
-            Common.DbViewInnerJoinAttributeName ,
-            Common.DbViewLeftOuterJoinAttributeName ,
-            Common.DbViewRightOuterJoinAttributeName ,
-            Common.DbViewFullOuterJoinAttributeName })
+        // Inner Join / Outer Join
+        foreach (var tableJoinAttributeName in CommonDefine.DbViewInnerOrOuterJoinAttributeNames)
         {
-            context.AddSource($"{Common.Namespace}.{joinAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+            context.AddSource($"{CommonDefine.Namespace}.{tableJoinAttributeName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-internal sealed class {{joinAttributeName}}<JoinTableClass,CompTableClass> : Attribute
+internal sealed class {{tableJoinAttributeName}}<JoinTableClass,CompareTableClass> : Attribute
 {
-    public {{joinAttributeName}}(string joinTableColumnProperty,string compTableColumnProperty)
+    public {{tableJoinAttributeName}}(string joinTableColumnProperty,string compareTableColumnProperty)
     {
     }
 }
 """);
         }
-        context.AddSource($"{Common.Namespace}.{Common.DbViewCrossJoinAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        // Cross Join
+        context.AddSource($"{CommonDefine.DbViewCrossJoinAttributeFullName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-internal sealed class {{Common.DbViewCrossJoinAttributeName}}<JoinTableClass> : Attribute
+internal sealed class {{CommonDefine.DbViewCrossJoinAttributeName}}<JoinTableClass> : Attribute
 {
-    public {{Common.DbViewCrossJoinAttributeName}}()
+    public {{CommonDefine.DbViewCrossJoinAttributeName}}()
     {
     }
 }
 """);
     }
 
+    /// <summary>
+    /// Source
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="source"></param>
     public static void GenerateSource(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
     {
         var cancellationToken = context.CancellationToken;
@@ -129,7 +138,7 @@ internal sealed class {{Common.DbViewCrossJoinAttributeName}}<JoinTableClass> : 
         var dbColumnInfos = new List<DbColumnInfo>();
         var createPropertyInfos = new List<DbColumnInfo>();
         var dbAutoCreateInfos = new List<DbAutoCreateInfo>();
-        foreach (var attributeInfo in viewClassInfo.Attributes.Where(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbViewColumnAttributeName}"))
+        foreach (var attributeInfo in viewClassInfo.Attributes.Where(x => x.Type.FullName == CommonDefine.DbViewColumnAttributeFullName))
         {
             if (attributeInfo.GenericTypes.Length <= 0)
             {
@@ -172,7 +181,7 @@ internal sealed class {{Common.DbViewCrossJoinAttributeName}}<JoinTableClass> : 
             }
 
         }
-        var viewTableAttribute = viewClassInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{Common.Namespace}.{Common.DbViewTableAttributeName}");
+        var viewTableAttribute = viewClassInfo.Attributes.FirstOrDefault(x => x.Type.FullName == CommonDefine.DbViewTableAttributeFullName);
         if (viewTableAttribute == default || viewTableAttribute.GenericTypes.Length <= 0)
         {
             return;
@@ -194,25 +203,25 @@ using System;
 using System.Text;
 using System.Runtime.CompilerServices;
 using Npgsql;
-using {{Common.Namespace}};
+using {{CommonDefine.Namespace}};
 
 {{viewClassInfo.Type.GetNamespaceDefine()}}
 
 partial class {{viewClassInfo.Type.ShortName}}
 {
-{{OutputSource.CreateDbTableProperty(dbTableClass)}}
-{{OutputSource.CreateProperty(dbQueryInfos)}}
-{{OutputSource.CreateDbColumnType(dbColumnInfos, dbQueryInfos)}}
-{{OutputSource.CreateDbParam(dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbTableProperty(dbTableClass)}}
+{{OutputSourceUtility.CreateProperty(dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbColumnType(dbColumnInfos, dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbParam(dbQueryInfos)}}
 
-{{OutputSource.CreateDbCondition()}}
-{{OutputSource.CreateDbOrder()}}
+{{OutputSourceUtility.CreateDbCondition()}}
+{{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSource.CreateDbSelect(viewClassInfo.Type.ShortName, dbQueryInfos, joinQuery)}}
+{{OutputSourceUtility.CreateDbSelect(viewClassInfo.Type.ShortName, dbQueryInfos, joinQuery)}}
 }
 
 """;
         // AddSourceで出力
-        context.AddSource($"{Common.Namespace}.{Common.DbTableAttributeName}.{viewClassInfo.Type.FullName}.g.cs", sourceCode);
+        context.AddSource($"{CommonDefine.DbTableAttributeFullName}.{viewClassInfo.Type.FullName}.g.cs", sourceCode);
     }
 }

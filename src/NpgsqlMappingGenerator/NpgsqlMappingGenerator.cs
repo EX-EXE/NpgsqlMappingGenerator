@@ -1,6 +1,7 @@
 ﻿using CodeAnalyzeUtility;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NpgsqlMappingGenerator.Generator;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,37 +12,31 @@ using System.Text;
 namespace NpgsqlMappingGenerator;
 
 [Generator(LanguageNames.CSharp)]
-public partial class Generator : IIncrementalGenerator
+public partial class NpgsqlMappingGenerator : IIncrementalGenerator
 {
-    private static readonly string GeneratorNamespace = "NpgsqlMappingGenerator";
-    private static readonly string DbTableAttribute = $"{GeneratorNamespace}.DbTableGeneratorAttribute";
-
-    private static readonly string DbParamAttribute = $"{GeneratorNamespace}.DbParamAttribute";
-
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // SourceGenerator用のAttribute生成
+        // SourceGenerator Attribute
         context.RegisterPostInitializationOutput(static context =>
         {
-            Common.GenerateDbBase(context);
-            Common.GenerateDbParam(context);
-            DbTable.GenerateAttribute(context);
-            DbView.GenerateAttribute(context);
+            CommonDefine.GenerateDbBase(context);
+            CommonDefine.GenerateDbParam(context);
+            DbTableGenerator.GenerateAttribute(context);
+            DbViewGenerator.GenerateAttribute(context);
         });
 
         // DbTable Hook
         var dbTableSource = context.SyntaxProvider.ForAttributeWithMetadataName(
-        $"{Common.Namespace}.{Common.DbTableAttributeName}",
+        CommonDefine.DbTableAttributeFullName,
         static (node, token) => true,
         static (context, token) => context);
-        context.RegisterSourceOutput(dbTableSource, DbTable.GenerateSource);
+        context.RegisterSourceOutput(dbTableSource, DbTableGenerator.GenerateSource);
 
         // DbView Hook
         var dbViewSource = context.SyntaxProvider.ForAttributeWithMetadataName(
-        $"{Common.Namespace}.{Common.DbViewAttributeName}",
+        CommonDefine.DbViewAttributeFullName,
         static (node, token) => true,
         static (context, token) => context);
-        context.RegisterSourceOutput(dbViewSource, DbView.GenerateSource);
+        context.RegisterSourceOutput(dbViewSource, DbViewGenerator.GenerateSource);
     }
 }

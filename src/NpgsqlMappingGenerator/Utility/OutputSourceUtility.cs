@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using CodeAnalyzeUtility;
 
-namespace NpgsqlMappingGenerator
+namespace NpgsqlMappingGenerator.Utility
 {
-    internal static class OutputSource
+    internal static class OutputSourceUtility
     {
         public static string CreateDbTableProperty(AnalyzeClassInfo analyzeClassInfo)
             => $$"""

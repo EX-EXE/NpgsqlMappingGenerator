@@ -1,6 +1,7 @@
 ﻿using CodeAnalyzeUtility;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NpgsqlMappingGenerator.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,38 +10,47 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace NpgsqlMappingGenerator;
+namespace NpgsqlMappingGenerator.Generator;
 
-public static class DbTable
+public static class DbTableGenerator
 {
+    /// <summary>
+    /// Attribute
+    /// </summary>
+    /// <param name="context"></param>
     public static void GenerateAttribute(IncrementalGeneratorPostInitializationContext context)
     {
         // DbTable
-        context.AddSource($"{Common.Namespace}.{Common.DbTableAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        context.AddSource($"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbTableAttributeName}} : Attribute
+internal sealed class {{CommonDefine.DbTableAttributeName}} : Attribute
 {
-    public {{Common.DbTableAttributeName}}(string tableName)
+    public {{CommonDefine.DbTableAttributeName}}(string tableName)
     {
     }
 }
 """);
         // DbColumn
-        context.AddSource($"{Common.Namespace}.{Common.DbColumnAttributeName}.cs", $$"""
-namespace {{Common.Namespace}};
+        context.AddSource($"{CommonDefine.Namespace}.{CommonDefine.DbColumnAttributeName}.cs", $$"""
+namespace {{CommonDefine.Namespace}};
 using System;
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbColumnAttributeName}}<T> : Attribute
+internal sealed class {{CommonDefine.DbColumnAttributeName}}<T> : Attribute
 {
-    public {{Common.DbColumnAttributeName}}(string paramName)
+    public {{CommonDefine.DbColumnAttributeName}}(string paramName)
     {
     }
 }
 """);
     }
 
+    /// <summary>
+    /// Generate
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="source"></param>
     public static void GenerateSource(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
     {
         var cancellationToken = context.CancellationToken;
@@ -94,21 +104,21 @@ using System;
 using System.Text;
 using System.Runtime.CompilerServices;
 using Npgsql;
-using {{Common.Namespace}};
+using {{CommonDefine.Namespace}};
 
 {{classInfo.Type.GetNamespaceDefine()}}
 
 partial class {{classInfo.Type.ShortName}}
 {
-{{OutputSource.CreateDbTableProperty(classInfo)}}
-{{OutputSource.CreateProperty(dbAggregateInfos)}}
-{{OutputSource.CreateDbColumnType(dbColumnInfos,dbQueryInfos)}}
-{{OutputSource.CreateDbParam(dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbTableProperty(classInfo)}}
+{{OutputSourceUtility.CreateProperty(dbAggregateInfos)}}
+{{OutputSourceUtility.CreateDbColumnType(dbColumnInfos, dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbParam(dbQueryInfos)}}
 
-{{OutputSource.CreateDbCondition()}}
-{{OutputSource.CreateDbOrder()}}
+{{OutputSourceUtility.CreateDbCondition()}}
+{{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSource.CreateDbSelect(classInfo.Type.ShortName, dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueryInfos)}}
 
     public static async ValueTask<int> InsertAsync(
         NpgsqlConnection connection,
@@ -208,7 +218,7 @@ partial class {{classInfo.Type.ShortName}}
 
 """;
         // AddSourceで出力
-        context.AddSource($"{Common.Namespace}.{Common.DbTableAttributeName}.{classInfo.Type.FullName}.g.cs", sourceCode);
+        context.AddSource($"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}.{classInfo.Type.FullName}.g.cs", sourceCode);
     }
 
     //public static class DiagnosticDescriptors

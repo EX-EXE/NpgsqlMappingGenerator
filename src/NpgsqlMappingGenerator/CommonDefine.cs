@@ -6,29 +6,63 @@ using System.Text;
 
 namespace NpgsqlMappingGenerator
 {
-    internal static class Common
+    internal static class CommonDefine
     {
+        //! [Generator Namespace]
         public static readonly string Namespace = "NpgsqlMappingGenerator";
 
-        public static readonly string DbTableAttributeName = $"DbTableGeneratorAttribute";
-        public static readonly string DbColumnAttributeName = $"DbColumnAttribute";
+        //! [Generator Hook]
+        //! Table
+        public static readonly string DbTableAttributeName = "DbTableGeneratorAttribute";
+        public static readonly string DbTableAttributeFullName = $"{Namespace}.{DbTableAttributeName}";
+        //! View
+        public static readonly string DbViewAttributeName = "DbViewGeneratorAttribute";
+        public static readonly string DbViewAttributeFullName = $"{Namespace}.{DbViewAttributeName}";
 
-        public static readonly string DbViewAttributeName = $"DbViewGeneratorAttribute";
-        public static readonly string DbViewTableAttributeName = $"DbViewTableAttribute";
-        public static readonly string DbViewColumnAttributeName = $"DbViewColumnAttribute";
 
+        //! [Table Column]
+        public static readonly string DbColumnAttributeName = "DbColumnAttribute";
+        public static readonly string DbColumnAttributeFullName = $"{Namespace}.{DbColumnAttributeName}";
 
-        public static readonly string DbViewInnerJoinAttributeName = $"DbViewInnerJoinAttribute";
-        public static readonly string DbViewLeftOuterJoinAttributeName = $"DbViewLeftOuterJoinAttributeName";
-        public static readonly string DbViewRightOuterJoinAttributeName = $"DbViewRightOuterJoinAttributeName";
-        public static readonly string DbViewFullOuterJoinAttributeName = $"DbViewFullOuterJoinAttributeName";
-        public static readonly string DbViewCrossJoinAttributeName = $"DbViewCrossJoinAttributeName";
+        //! [View Table]
+        public static readonly string DbViewTableAttributeName = "DbViewTableAttribute";
+        public static readonly string DbViewTableAttributeFullName = $"{Namespace}.{DbViewTableAttributeName}";
+        //! [View Column]
+        public static readonly string DbViewColumnAttributeName = "DbViewColumnAttribute";
+        public static readonly string DbViewColumnAttributeFullName = $"{Namespace}.{DbViewColumnAttributeName}";
 
+        //! [View Join]
+        //! InnerJoin
+        public static readonly string DbViewInnerJoinAttributeName = "DbViewInnerJoinAttribute";
         public static readonly string DbViewInnerJoinAttributeFullName = $"{Namespace}.{DbViewInnerJoinAttributeName}";
+        //! LeftOuterJoin
+        public static readonly string DbViewLeftOuterJoinAttributeName = "DbViewLeftOuterJoinAttributeName";
         public static readonly string DbViewLeftOuterJoinAttributeFullName = $"{Namespace}.{DbViewLeftOuterJoinAttributeName}";
+        //! RightOuterJoin
+        public static readonly string DbViewRightOuterJoinAttributeName = "DbViewRightOuterJoinAttributeName";
         public static readonly string DbViewRightOuterJoinAttributeFullName = $"{Namespace}.{DbViewRightOuterJoinAttributeName}";
+        //! FullOuterJoin
+        public static readonly string DbViewFullOuterJoinAttributeName = "DbViewFullOuterJoinAttributeName";
         public static readonly string DbViewFullOuterJoinAttributeFullName = $"{Namespace}.{DbViewFullOuterJoinAttributeName}";
-        public static readonly string DbViewCrossJoinAttributeFulleName = $"{Namespace}.{DbViewCrossJoinAttributeName}";
+        //! CrossJoin
+        public static readonly string DbViewCrossJoinAttributeName = "DbViewCrossJoinAttributeName";
+        public static readonly string DbViewCrossJoinAttributeFullName = $"{Namespace}.{DbViewCrossJoinAttributeName}";
+        //! Join ~ ON ~
+        public static readonly string[] DbViewJoinAttributeFullNames = new[]
+            {
+                DbViewInnerJoinAttributeFullName,
+                DbViewLeftOuterJoinAttributeFullName ,
+                DbViewRightOuterJoinAttributeFullName,
+                DbViewFullOuterJoinAttributeFullName ,
+                DbViewCrossJoinAttributeFullName ,
+            };
+        public static readonly string[] DbViewInnerOrOuterJoinAttributeNames = new[]
+            {
+                DbViewInnerJoinAttributeName,
+                DbViewLeftOuterJoinAttributeName ,
+                DbViewRightOuterJoinAttributeName,
+                DbViewFullOuterJoinAttributeName ,
+            };
         public static readonly string[] DbViewInnerOrOuterJoinAttributeFullNames = new[]
             {
                 DbViewInnerJoinAttributeFullName,
@@ -36,45 +70,93 @@ namespace NpgsqlMappingGenerator
                 DbViewRightOuterJoinAttributeFullName,
                 DbViewFullOuterJoinAttributeFullName ,
             };
-        public static readonly string[] DbViewJoinAttributeFullNames = new[]
-            {
-                DbViewInnerJoinAttributeFullName,
-                DbViewLeftOuterJoinAttributeFullName ,
-                DbViewRightOuterJoinAttributeFullName,
-                DbViewFullOuterJoinAttributeFullName ,
-                DbViewCrossJoinAttributeFulleName ,
-            };
 
+        //! [Aggregate]
+        public static readonly string DbAggregateAttributeName = "DbAggregateAttribute";
+        public static readonly string DbAggregateAttributeFullName = $"{Namespace}.{DbAggregateAttributeName}";
 
-        public static readonly string DbAggregateAttributeName = $"DbAggregateAttribute";
-        public static readonly string DbAggregateName_None = $"None";
-        public static readonly string DbAggregateName_Avg = $"Avg";
-        public static readonly string DbAggregateName_Count = $"Count";
-        public static readonly string DbAggregateName_Max = $"Max";
-        public static readonly string DbAggregateName_Min = $"Min";
-        public static readonly int DbAggregateValue_None    = 0;
-        public static readonly int DbAggregateValue_Avg     = 1 << 0;
-        public static readonly int DbAggregateValue_Count   = 1 << 1;
-        public static readonly int DbAggregateValue_Max     = 1 << 2;
-        public static readonly int DbAggregateValue_Min     = 1 << 3;
+        public static readonly string DbAggregateName_None = "None";
+        public static readonly string DbAggregateName_Avg = "Avg";
+        public static readonly string DbAggregateName_Count = "Count";
+        public static readonly string DbAggregateName_Max = "Max";
+        public static readonly string DbAggregateName_Min = "Min";
+        public static readonly int DbAggregateValue_None = 0;
+        public static readonly int DbAggregateValue_Avg = 1 << 0;
+        public static readonly int DbAggregateValue_Count = 1 << 1;
+        public static readonly int DbAggregateValue_Max = 1 << 2;
+        public static readonly int DbAggregateValue_Min = 1 << 3;
 
-        public static readonly string DbAutoCreateAttribute = $"DbAutoCreateAttribute";
-        public static readonly string DbAutoCreateType_Insert = $"Insert";
-        public static readonly string DbAutoCreateType_Update = $"Update";
+        //! [AutoCreate]
+        public static readonly string DbAutoCreateAttributeName = "DbAutoCreateAttribute";
+        public static readonly string DbAutoCreateAttributeFullName = $"{Namespace}.{DbAutoCreateAttributeName}";
+        public static readonly string DbAutoCreateType_Insert = "Insert";
+        public static readonly string DbAutoCreateType_Update = "Update";
 
         public static void GenerateDbBase(IncrementalGeneratorPostInitializationContext context)
         {
             // DbCompareOperator
             context.AddSource($"{Namespace}.DbCompareOperator.cs", $$"""
 namespace NpgsqlMappingGenerator;
+
+/// <summary>
+/// Compare Operator
+/// </summary>
 public enum DbCompareOperator
 {
+    /// <summary>
+    /// Equals(=)
+    /// </summary>
     Equals,
+    /// <summary>
+    /// Not Equals(!=)
+    /// </summary>
     NotEquals,
+    /// <summary>
+    /// Less Than(<)
+    /// </summary>
     LessThan,
+    /// <summary>
+    /// Less Than Equal(<=)
+    /// </summary>
     LessThanEqual,
+    /// <summary>
+    /// Greater Than(>)
+    /// </summary>
     GreaterThan,
-    GreaterThanOrEqual,
+    /// <summary>
+    /// Greater Than Equal(>=)
+    /// </summary>
+    GreaterThanEqual,
+
+    /// <summary>
+    /// LIKE(Pattern Matching)
+    /// </summary>
+    Like,
+    /// <summary>
+    /// NotLIKE(Pattern Matching)
+    /// </summary>
+    NotLike,
+    
+    /// <summary>
+    /// Match Regex(POSIX Regular Expression)
+    /// Case Sensitive
+    /// </summary>
+    MatchRegexSensitive,
+    /// <summary>
+    /// Match Regex(POSIX Regular Expression)
+    /// Case Insensitive
+    /// </summary>
+    MatchRegexInsensitive,
+    /// <summary>
+    /// Not Match Regex(POSIX Regular Expression)
+    /// Case Sensitive
+    /// </summary>
+    NotMatchRegexSensitive,
+    /// <summary>
+    /// Not Match Regex(POSIX Regular Expression)
+    /// Case Insensitive
+    /// </summary>
+    NotMatchRegexInsensitive,
 }
 public static class DbCompareOperatorExtensins
 {
@@ -86,7 +168,15 @@ public static class DbCompareOperatorExtensins
             DbCompareOperator.LessThan => "<",
             DbCompareOperator.LessThanEqual => "<=",
             DbCompareOperator.GreaterThan => ">",
-            DbCompareOperator.GreaterThanOrEqual => ">=",
+            DbCompareOperator.GreaterThanEqual => ">=",
+
+            DbCompareOperator.Like => "LIKE",
+            DbCompareOperator.NotLike => "NOT LIKE",
+
+            DbCompareOperator.MatchRegexSensitive => "~",
+            DbCompareOperator.MatchRegexInsensitive => "~*",
+            DbCompareOperator.NotMatchRegexSensitive => "!~",
+            DbCompareOperator.NotMatchRegexInsensitive => "!~*",
             _ => throw new NotImplementedException(),
         };
 }
@@ -143,27 +233,27 @@ public enum DbAggregateType
     {{DbAggregateName_Min}}     = {{DbAggregateValue_Min}},
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbAggregateAttributeName}} : Attribute
+internal sealed class {{CommonDefine.DbAggregateAttributeName}} : Attribute
 {
-    public {{Common.DbAggregateAttributeName}}(DbAggregateType types)
+    public {{CommonDefine.DbAggregateAttributeName}}(DbAggregateType types)
     {
     }
 }
 """);
             // DbAutoCreateAttribute
-            context.AddSource($"{Namespace}.{Common.DbAutoCreateAttribute}.cs", $$"""
+            context.AddSource($"{Namespace}.{CommonDefine.DbAutoCreateAttributeName}.cs", $$"""
 namespace NpgsqlMappingGenerator;
 using System;
 [Flags]
 public enum DbAutoCreateType
 {
-    {{DbAutoCreateType_Insert}}     = 1 << 1,
-    {{DbAutoCreateType_Update}}   = 1 << 2,
+    {{DbAutoCreateType_Insert}}     = 1 << 0,
+    {{DbAutoCreateType_Update}}   = 1 << 1,
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-internal sealed class {{Common.DbAutoCreateAttribute}}<T> : Attribute
+internal sealed class {{CommonDefine.DbAutoCreateAttributeName}}<T> : Attribute
 {
-    public {{Common.DbAutoCreateAttribute}}(DbAutoCreateType types)
+    public {{CommonDefine.DbAutoCreateAttributeName}}(DbAutoCreateType types)
     {
     }
 }
