@@ -86,7 +86,7 @@ using {{CommonDefine.Namespace}};
 
 partial class {{classInfo.Type.ShortName}}
 {
-{{OutputSourceUtility.CreateDbTableProperty(classInfo)}}
+{{OutputSourceUtility.CreateDbTableProperty(dbTable)}}
 {{OutputSourceUtility.CreateProperty(dbAggregates)}}
 
 {{OutputSourceUtility.CreateDbType(dbColumns,dbQueries,Array.Empty<(string,string)>())}}
