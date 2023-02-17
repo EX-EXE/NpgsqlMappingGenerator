@@ -110,83 +110,17 @@ internal sealed class {{CommonDefine.DbViewCrossJoinAttributeName}}<JoinTableCla
         {
             return;
         }
-        // ClassInfo
-        var viewClassInfo = AnalyzeClassInfo.Analyze(typeSymbol, cancellationToken);
-        var classInfoDict = new Dictionary<string, AnalyzeClassInfo>();
-        foreach (var attribute in viewClassInfo.Attributes.Where(x => DbViewAttributeNames.Contains(x.Type.FullName)))
+        var classInfo = AnalyzeClassInfo.Analyze(typeSymbol, cancellationToken);
+        var dbView = AnalyzeDbView.Analyze(classInfo, cancellationToken);
+        foreach (var dbColumn in dbView.DbQueries)
         {
-            foreach (var genericType in attribute.GenericTypes)
-            {
-                if (!classInfoDict.ContainsKey(genericType.FullNameWithGenerics))
-                {
-                    var classSymbol = genericType.Symbol as INamedTypeSymbol;
-                    if (classSymbol == default)
-                    {
-                        return;
-                    }
-                    classInfoDict[genericType.FullNameWithGenerics] = AnalyzeClassInfo.Analyze(classSymbol, cancellationToken);
-                }
-            }
+            dbColumn.DbColumnName = $"{dbColumn.DbTableInfo.DbTableName}.{dbColumn.DbColumnName}";
+            dbColumn.PropertyName = dbColumn.DbTableInfo.ClassInfo.Type.ShortName + dbColumn.PropertyName;
         }
+        (string TableClassName, string[] PropertyNames)[] enumKeyValueList = dbView.DbColumns.GroupBy(x => x.DbTableInfo).Select(x => (x.Key.ClassInfo.Type.ShortName, x.Select(x => x.PropertyName).ToArray())).ToArray();
 
-        // Attribute
-        var fromQuery = $"FROM {viewClassInfo.GetDbViewTableName(classInfoDict)}";
-        var joinQuery = viewClassInfo.GetDbTableJoinQuery(classInfoDict);
-
-        // DbColumns
-        var dbQueryInfos = new List<DbColumnInfo>();
-        var dbColumnInfos = new List<DbColumnInfo>();
-        var createPropertyInfos = new List<DbColumnInfo>();
-        var dbAutoCreateInfos = new List<DbAutoCreateInfo>();
-        foreach (var attributeInfo in viewClassInfo.Attributes.Where(x => x.Type.FullName == CommonDefine.DbViewColumnAttributeFullName))
-        {
-            if (attributeInfo.GenericTypes.Length <= 0)
-            {
-                continue;
-            }
-            if (attributeInfo.ArgumentObjects.Length <= 1)
-            {
-                continue;
-            }
-            var genericType = attributeInfo.GenericTypes[0];
-            var propertyObj = attributeInfo.ArgumentObjects[0];
-            var aggregateObj = attributeInfo.ArgumentObjects[1];
-            if (classInfoDict.TryGetValue(genericType.FullNameWithGenerics, out var analyzeClassInfo) &&
-                propertyObj is string propertyStr &&
-                aggregateObj is int propertyNum)
-            {
-                var property = analyzeClassInfo.Properties.Where(x => x.Name == propertyStr).First();
-                var columnInfo = property.GetDbColumnInfo(analyzeClassInfo.GetDbTableName());
-                if (columnInfo != null)
-                {
-                    var table = analyzeClassInfo.GetDbTableName();
-                    var column = property.GetDbColumnName();
-                    // Column
-                    dbQueryInfos.Add(columnInfo);
-                    dbColumnInfos.Add(columnInfo);
-                    createPropertyInfos.Add(columnInfo);
-                    // Aggregate
-                    var aggregateInfos = columnInfo.GetDbAggregateInfos(propertyNum);
-                    dbQueryInfos.AddRange(aggregateInfos);
-                    createPropertyInfos.AddRange(aggregateInfos);
-                }
-                else
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                continue;
-            }
-
-        }
-        var viewTableAttribute = viewClassInfo.Attributes.FirstOrDefault(x => x.Type.FullName == CommonDefine.DbViewTableAttributeFullName);
-        if (viewTableAttribute == default || viewTableAttribute.GenericTypes.Length <= 0)
-        {
-            return;
-        }
-        var dbTableClass = classInfoDict[viewTableAttribute.GenericTypes[0].FullNameWithGenerics];
+        var dbColumns = dbView.DbColumns;
+        var dbQueries = dbView.DbQueries;
 
         // Source
         var sourceCode = $$"""
@@ -197,7 +131,6 @@ internal sealed class {{CommonDefine.DbViewCrossJoinAttributeName}}<JoinTableCla
 #pragma warning disable CS8602
 #pragma warning disable CS8603
 #pragma warning disable CS8604
-#pragma warning disable CS8618
 
 using System;
 using System.Text;
@@ -205,23 +138,26 @@ using System.Runtime.CompilerServices;
 using Npgsql;
 using {{CommonDefine.Namespace}};
 
-{{viewClassInfo.Type.GetNamespaceDefine()}}
+{{classInfo.Type.GetNamespaceDefine()}}
 
-partial class {{viewClassInfo.Type.ShortName}}
+partial class {{classInfo.Type.ShortName}}
 {
-{{OutputSourceUtility.CreateDbTableProperty(dbTableClass)}}
-{{OutputSourceUtility.CreateProperty(dbQueryInfos)}}
-{{OutputSourceUtility.CreateDbColumnType(dbColumnInfos, dbQueryInfos)}}
-{{OutputSourceUtility.CreateDbParam(dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbTableProperty(dbView.BaseTable)}}
+{{OutputSourceUtility.CreateProperty(dbQueries)}}
+
+{{OutputSourceUtility.CreateDbType(dbColumns, dbQueries, enumKeyValueList.Select(x => ($"All{x.TableClassName}", x.PropertyNames.OutputLine("|"))).ToArray())}}
+
+{{OutputSourceUtility.CreateDbParam(dbQueries)}}
 
 {{OutputSourceUtility.CreateDbCondition()}}
 {{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSourceUtility.CreateDbSelect(viewClassInfo.Type.ShortName, dbQueryInfos, joinQuery)}}
+{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, dbView.JoinQuery)}}
+
 }
 
 """;
         // AddSourceで出力
-        context.AddSource($"{CommonDefine.DbTableAttributeFullName}.{viewClassInfo.Type.FullName}.g.cs", sourceCode);
+        context.AddSource($"{CommonDefine.DbViewAttributeFullName}.{classInfo.Type.FullName}.g.cs", sourceCode);
     }
 }

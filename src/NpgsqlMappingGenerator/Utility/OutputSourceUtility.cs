@@ -7,84 +7,86 @@ namespace NpgsqlMappingGenerator.Utility
 {
     internal static class OutputSourceUtility
     {
-        public static string CreateDbTableProperty(AnalyzeClassInfo analyzeClassInfo)
+        public static string CreateDbTableProperty(AnalyzeDbTable dbTable)
             => $$"""
-    public static readonly string DbTableName = "{{analyzeClassInfo.GetDbTableName()}}";
+    public static readonly string DbTableName = "{{dbTable.DbTableName}}";
 """;
-
-        public static string CreateProperty(IEnumerable<DbColumnInfo> dbColumns)
+        public static string CreateProperty(AnalyzeDbColumn[] dbColumns)
         {
             return dbColumns.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; }""").OutputLine(1);
         }
 
-        public static string CreateDbColumnType(IEnumerable<DbColumnInfo> dbColumnInfos, IEnumerable<DbColumnInfo> dbQueryInfos)
-            => $$"""
+        public static string CreateDbType(AnalyzeDbColumn[] dbColumns, AnalyzeDbColumn[] dbQueries, (string Key, string Value)[] AppendEnumValues)
+        {
+            return $$"""
     [Flags]
-    public enum DbColumnQueryType
+    public enum DbQueryType
     {
-{{dbQueryInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = 1 << {i},").OutputLine(2)}}
+{{dbQueries.ForEachIndexLines((i, x) => $"{x.PropertyName} = 1 << {i},").OutputLine(2)}}
         None = 0,
-        AllColumn = {{dbColumnInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}},
-        All = {{dbQueryInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
+        All = {{(0 < dbQueries.Length ? dbQueries.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
+        AllColumns = {{(0 < dbColumns.Length ? dbColumns.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
+{{AppendEnumValues.ForEachLines(x => $"{x.Key} = {x.Value},").OutputLine(2)}}
     }
     [Flags]
     public enum DbColumnType
     {
-{{dbColumnInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = DbColumnQueryType.{x.PropertyName},").OutputLine(2)}}
+{{dbColumns.ForEachIndexLines((i, x) => $"{x.PropertyName} = DbQueryType.{x.PropertyName},").OutputLine(2)}}
         None = 0,
-        All = {{dbColumnInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
+        All = {{(0 < dbColumns.Length ? dbColumns.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
+{{AppendEnumValues.ForEachLines(x => $"{x.Key} = {x.Value},").OutputLine(2)}}
     }
-    public static readonly DbColumnQueryType[] DbColumnQueryTypes = {
-{{dbQueryInfos.ForEachLines(x => $"DbColumnQueryType.{x.PropertyName},").OutputLine(3)}}
+    public static readonly DbQueryType[] DbQueryTypes = {
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName},").OutputLine(3)}}
         };
-    public static string GetDbColumnQuery(DbColumnQueryType queryType)
+    public static string GetDbQuery(DbQueryType queryType)
         => queryType switch
         {
-{{dbQueryInfos.ForEachLines(x => $"DbColumnQueryType.{x.PropertyName} => \"{x.Query}\",").OutputLine(3)}}
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.DbQuery}\",").OutputLine(3)}}
             _ => throw new NotImplementedException(),
         };
 """;
+        }
 
-
-        public static string CreateDbParam(IEnumerable<DbColumnInfo> dbColumns)
+        public static string CreateDbParam(AnalyzeDbColumn[] dbColumns)
         {
             var dbParams = new StringBuilder();
             dbParams.AppendLine($$"""
     public interface IDbParam
     {
-        DbColumnQueryType QueryType { get; }
+        DbQueryType QueryType { get; }
         string DbTable { get; }
         string DbQuery { get; }
         NpgsqlParameter CreateParameter(string paramName);
     }
 """);
-            foreach (var dbQueryInfo in dbColumns)
+            foreach (var dbColumn in dbColumns)
             {
-                var defaultValue = dbQueryInfo.PropertyType == "string" || dbQueryInfo.PropertyType == "System.String"
+                var defaultValue = dbColumn.PropertyType == "string" || dbColumn.PropertyType == "System.String"
                     ? "string.Empty"
                     : "default";
                 dbParams.AppendLine($$"""
-    public class DbParam{{dbQueryInfo.PropertyName}} : IDbParam
+    public class DbParam{{dbColumn.PropertyName}} : IDbParam
     {
-        public DbColumnQueryType QueryType => DbColumnQueryType.{{dbQueryInfo.PropertyName}};
+        public DbQueryType QueryType => DbQueryType.{{dbColumn.PropertyName}};
         public string DbTable => DbTableName;
-        public string DbQuery => GetDbColumnQuery(QueryType);
-        public {{dbQueryInfo.PropertyType}} Value { get; private set; } = {{defaultValue}};
+        public string DbQuery => GetDbQuery(QueryType);
+        public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
-        public static DbParam{{dbQueryInfo.PropertyName}} Create({{dbQueryInfo.PropertyType}} value)
+        public static DbParam{{dbColumn.PropertyName}} Create({{dbColumn.PropertyType}} value)
         {
-            return new DbParam{{dbQueryInfo.PropertyName}}(value);
+            return new DbParam{{dbColumn.PropertyName}}(value);
         }
-        public DbParam{{dbQueryInfo.PropertyName}}()
+        public DbParam{{dbColumn.PropertyName}}()
         {
         }
-        public DbParam{{dbQueryInfo.PropertyName}}({{dbQueryInfo.PropertyType}} value)
+        public DbParam{{dbColumn.PropertyName}}({{dbColumn.PropertyType}} value)
         {
             Value = value;
         }
         public NpgsqlParameter CreateParameter(string name)
         {
-            return {{dbQueryInfo.ConverterType}}.CreateParameter(name, Value);
+            return {{dbColumn.ConverterType}}.CreateParameter(name, Value);
         }
     }
 """);
@@ -92,115 +94,12 @@ namespace NpgsqlMappingGenerator.Utility
             return dbParams.ToString();
         }
 
-        public static string CreateDbCondition()
-            => """
-    public interface IDbCondition
-    {
-        string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal);
-    }
-    public class DbConditions : IDbCondition
-    {
-        public DbLogicOperator Logic { get; set; } = DbLogicOperator.And;
-        public IDbCondition[] Conditions { get; set; } = Array.Empty<IDbCondition>();
-
-        public static DbConditions Create(DbLogicOperator logicOperator,params IDbCondition[] conditions)
-        {
-            return new DbConditions(logicOperator,conditions);
-        }
-        public DbConditions()
-        {
-        }
-        public DbConditions(DbLogicOperator logicOperator,IEnumerable<IDbCondition> conditions)
-        {
-            Logic = logicOperator;
-            Conditions = conditions.ToArray();
-        }
-        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
-        {
-            var queryList = new List<string>(Conditions.Length);
-            foreach (var condition in Conditions)
-            {
-                queryList.Add(condition.CreateQueryAndParameter(ref parameterList, ref ordinal));
-            }
-            return $"({string.Join(Logic.ToQuery(), queryList)})";
-        }
-    }
-    public class DbCondition : IDbCondition
-    {
-        public DbCompareOperator Operator { get; set; } = DbCompareOperator.Equals;
-        public IDbParam? Param { get; set; } = default;
-
-        public static DbCondition Create(DbCompareOperator compareOperator ,IDbParam? param)
-        {
-            return new DbCondition(compareOperator,param);
-        }
-        public DbCondition()
-        {
-        }
-        public DbCondition(DbCompareOperator compareOperator ,IDbParam? param)
-        {
-            Operator = compareOperator;
-            Param = param;
-        }
-        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
-        {
-            var paramName = $"@{Param.DbQuery}{ordinal++}";
-            parameterList.Add(Param.CreateParameter(paramName));
-            return $"({Param.DbQuery} {Operator.ToQuery()} {paramName})";
-        }
-    }
-""";
-        public static string CreateDbOrder()
-            => """
-    public interface IDbOrder
-    {
-        string CreateQuery();
-    }
-    public class DbOrders : IDbOrder
-    {
-        public DbOrder[] Orders { get; set; } = Array.Empty<DbOrder>();
-        public static DbOrders Create(params DbOrder[] orders)
-        {
-            return new DbOrders(orders);
-        }
-        public DbOrders()
-        {
-        }
-        public DbOrders(IEnumerable<DbOrder> orders)
-        {
-            Orders = orders.ToArray();
-        }
-        public string CreateQuery()
-            => string.Join(',', Orders.Select(x => x.CreateQuery()));
-    }
-    public class DbOrder : IDbOrder
-    {
-        public DbOrderType Order { get; set; } = DbOrderType.Asc;
-        public DbColumnQueryType QueryType { get; set; }
-        
-        public static DbOrder Create(DbOrderType orderType ,DbColumnQueryType queryType)
-        {
-            return new DbOrder(orderType,queryType);
-        }
-        public DbOrder()
-        {
-        }
-        public DbOrder(DbOrderType orderType ,DbColumnQueryType queryType)
-        {
-            Order = orderType;
-            QueryType = queryType;
-        }
-        public string CreateQuery()
-            => $"{GetDbColumnQuery(QueryType)} {Order.ToQuery()}";
-    }
-""";
-
-        public static string CreateDbSelect(string className, IEnumerable<DbColumnInfo> dbColumns, string joinQuery = "")
+        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbColumns, string joinQuery)
             => $$"""
     public static async IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
         DbColumnType distinctColumns = DbColumnType.None,
-        DbColumnQueryType selectColumns = DbColumnQueryType.None,
+        DbQueryType selectColumns = DbQueryType.None,
         IDbCondition? where = null,
         IDbCondition? having = null,
         IDbOrder? order = null,
@@ -214,26 +113,26 @@ namespace NpgsqlMappingGenerator.Utility
         var sqlBuilder = new StringBuilder("SELECT");
 
         var distinctColumnQueries = new List<string>();
-        var selectColumnQueries = new List<string>();
-        var distinctQueryType = (DbColumnQueryType)distinctColumns;
-        foreach (var columnQueryTypes in DbColumnQueryTypes)
+        var selectQueries = new List<string>();
+        var distinctQueryType = (DbQueryType)distinctColumns;
+        foreach (var columnQueryTypes in DbQueryTypes)
         {
             if (distinctQueryType.HasFlag(columnQueryTypes))
             {
-                distinctColumnQueries.Add(GetDbColumnQuery(columnQueryTypes));
+                distinctColumnQueries.Add(GetDbQuery(columnQueryTypes));
             }
             if (selectColumns.HasFlag(columnQueryTypes))
             {
-                selectColumnQueries.Add(GetDbColumnQuery(columnQueryTypes));
+                selectQueries.Add(GetDbQuery(columnQueryTypes));
             }
         }
         if (0 < distinctColumnQueries.Count)
         {
             sqlBuilder.Append($" DISTINCT ON ({string.Join(",", distinctColumnQueries)})");
         }
-        if (0 < selectColumnQueries.Count)
+        if (0 < selectQueries.Count)
         {
-            sqlBuilder.Append($" {string.Join(",", selectColumnQueries)}");
+            sqlBuilder.Append($" {string.Join(",", selectQueries)}");
         }
         sqlBuilder.Append($" FROM {DbTableName} {{joinQuery}}");
         int conditionOrdinal = 0;
@@ -269,14 +168,299 @@ namespace NpgsqlMappingGenerator.Utility
         {
             int readerOrdinal = 0;
             var result = new {{className}}();
-{{dbColumns.ForEachLines(x => $"selectColumns.HasFlag(DbColumnQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
+{{dbColumns.ForEachLines(x => $"selectColumns.HasFlag(DbQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
             yield return result;
         }
     }
 
     public static IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
-        DbColumnQueryType selectColumns,
+        DbQueryType selectColumns,
+        IDbCondition? where = null,
+        IDbCondition? having = null,
+        IDbOrder? order = null,
+        long limit = 0,
+        long offset = 0,
+        CancellationToken cancellationToken = default)
+    {
+        return SelectAsync(
+            connection,
+            DbColumnType.None,
+            selectColumns,
+            where,
+            having,
+            order,
+            limit,
+            offset,
+            cancellationToken);
+    }
+""";
+
+
+
+
+
+
+
+        public static string CreateDbTableProperty(AnalyzeClassInfo analyzeClassInfo)
+            => $$"""
+    public static readonly string DbTableName = "{{analyzeClassInfo.GetDbTableName()}}";
+""";
+
+        public static string CreateProperty(IEnumerable<DbColumnInfo> dbColumns)
+        {
+            return dbColumns.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; }""").OutputLine(1);
+        }
+
+        public static string CreateDbColumnType(IEnumerable<DbColumnInfo> dbColumnInfos, IEnumerable<DbColumnInfo> dbQueryInfos)
+            => $$"""
+    [Flags]
+    public enum DbQueryType
+    {
+{{dbQueryInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = 1 << {i},").OutputLine(2)}}
+        None = 0,
+        AllColumn = {{dbColumnInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}},
+        All = {{dbQueryInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
+    }
+    [Flags]
+    public enum DbColumnType
+    {
+{{dbColumnInfos.ForEachIndexLines((i, x) => $"{x.PropertyName} = DbQueryType.{x.PropertyName},").OutputLine(2)}}
+        None = 0,
+        All = {{dbColumnInfos.ForEachLines(x => x.PropertyName).OutputLine("|")}}
+    }
+    public static readonly DbQueryType[] DbQueryTypes = {
+{{dbQueryInfos.ForEachLines(x => $"DbQueryType.{x.PropertyName},").OutputLine(3)}}
+        };
+    public static string GetDbQuery(DbQueryType queryType)
+        => queryType switch
+        {
+{{dbQueryInfos.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.Query}\",").OutputLine(3)}}
+            _ => throw new NotImplementedException(),
+        };
+""";
+
+        public static string CreateDbParam(IEnumerable<DbColumnInfo> dbColumns)
+        {
+            var dbParams = new StringBuilder();
+            dbParams.AppendLine($$"""
+    public interface IDbParam
+    {
+        DbQueryType QueryType { get; }
+        string DbTable { get; }
+        string DbQuery { get; }
+        NpgsqlParameter CreateParameter(string paramName);
+    }
+""");
+            foreach (var dbQueryInfo in dbColumns)
+            {
+                var defaultValue = dbQueryInfo.PropertyType == "string" || dbQueryInfo.PropertyType == "System.String"
+                    ? "string.Empty"
+                    : "default";
+                dbParams.AppendLine($$"""
+    public class DbParam{{dbQueryInfo.PropertyName}} : IDbParam
+    {
+        public DbQueryType QueryType => DbQueryType.{{dbQueryInfo.PropertyName}};
+        public string DbTable => DbTableName;
+        public string DbQuery => GetDbQuery(QueryType);
+        public {{dbQueryInfo.PropertyType}} Value { get; private set; } = {{defaultValue}};
+
+        public DbParam{{dbQueryInfo.PropertyName}}()
+        {
+        }
+        public DbParam{{dbQueryInfo.PropertyName}}({{dbQueryInfo.PropertyType}} value)
+        {
+            Value = value;
+        }
+        public NpgsqlParameter CreateParameter(string name)
+        {
+            return {{dbQueryInfo.ConverterType}}.CreateParameter(name, Value);
+        }
+    }
+""");
+            }
+            return dbParams.ToString();
+        }
+
+        public static string CreateDbCondition()
+            => """
+    public interface IDbCondition
+    {
+        string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal);
+    }
+    public class DbConditions : IDbCondition
+    {
+        public DbLogicOperator Logic { get; set; } = DbLogicOperator.And;
+        public IEnumerable<IDbCondition> Conditions { get; set; } = Array.Empty<IDbCondition>();
+
+        public DbConditions()
+        {
+        }
+        public DbConditions(DbLogicOperator logicOperator,IEnumerable<IDbCondition> conditions)
+        {
+            Logic = logicOperator;
+            Conditions = conditions;
+        }
+        public DbConditions(DbLogicOperator logicOperator,params IDbCondition[] conditions)
+        {
+            Logic = logicOperator;
+            Conditions = conditions;
+        }
+        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
+        {
+            var conditionArray = Conditions.ToArray();
+            var queryList = new List<string>(conditionArray.Length);
+            foreach (var condition in conditionArray)
+            {
+                queryList.Add(condition.CreateQueryAndParameter(ref parameterList, ref ordinal));
+            }
+            return $"({string.Join(Logic.ToQuery(), queryList)})";
+        }
+    }
+    public class DbCondition : IDbCondition
+    {
+        public DbCompareOperator Operator { get; set; } = DbCompareOperator.Equals;
+        public IDbParam? Param { get; set; } = default;
+
+        public DbCondition()
+        {
+        }
+        public DbCondition(DbCompareOperator compareOperator ,IDbParam? param)
+        {
+            Operator = compareOperator;
+            Param = param;
+        }
+        public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
+        {
+            var paramName = $"@{Param.DbQuery}{ordinal++}";
+            parameterList.Add(Param.CreateParameter(paramName));
+            return $"({Param.DbQuery} {Operator.ToQuery()} {paramName})";
+        }
+    }
+""";
+        public static string CreateDbOrder()
+            => """
+    public interface IDbOrder
+    {
+        string CreateQuery();
+    }
+    public class DbOrders : IDbOrder
+    {
+        public IEnumerable<DbOrder> Orders { get; set; } = Array.Empty<DbOrder>();
+        public DbOrders()
+        {
+        }
+        public DbOrders(IEnumerable<DbOrder> orders)
+        {
+            Orders = orders;
+        }
+        public DbOrders(params DbOrder[] orders)
+        {
+            Orders = orders;
+        }
+        public string CreateQuery()
+            => string.Join(',', Orders.Select(x => x.CreateQuery()));
+    }
+    public class DbOrder : IDbOrder
+    {
+        public DbOrderType Order { get; set; } = DbOrderType.Asc;
+        public DbQueryType QueryType { get; set; }
+        
+        public DbOrder()
+        {
+        }
+        public DbOrder(DbOrderType orderType ,DbQueryType queryType)
+        {
+            Order = orderType;
+            QueryType = queryType;
+        }
+        public string CreateQuery()
+            => $"{GetDbQuery(QueryType)} {Order.ToQuery()}";
+    }
+""";
+
+        public static string CreateDbSelect(string className, IEnumerable<DbColumnInfo> dbColumns, string joinQuery = "")
+            => $$"""
+    public static async IAsyncEnumerable<{{className}}> SelectAsync(
+        NpgsqlConnection connection,
+        DbColumnType distinctColumns = DbColumnType.None,
+        DbQueryType selectColumns = DbQueryType.None,
+        IDbCondition? where = null,
+        IDbCondition? having = null,
+        IDbOrder? order = null,
+        long limit = 0,
+        long offset = 0,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameters = new List<NpgsqlParameter>();
+
+        var sqlBuilder = new StringBuilder("SELECT");
+
+        var distinctColumnQueries = new List<string>();
+        var selectQueries = new List<string>();
+        var distinctQueryType = (DbQueryType)distinctColumns;
+        foreach (var columnQueryTypes in DbQueryTypes)
+        {
+            if (distinctQueryType.HasFlag(columnQueryTypes))
+            {
+                distinctColumnQueries.Add(GetDbQuery(columnQueryTypes));
+            }
+            if (selectColumns.HasFlag(columnQueryTypes))
+            {
+                selectQueries.Add(GetDbQuery(columnQueryTypes));
+            }
+        }
+        if (0 < distinctColumnQueries.Count)
+        {
+            sqlBuilder.Append($" DISTINCT ON ({string.Join(",", distinctColumnQueries)})");
+        }
+        if (0 < selectQueries.Count)
+        {
+            sqlBuilder.Append($" {string.Join(",", selectQueries)}");
+        }
+        sqlBuilder.Append($" FROM {DbTableName} {{joinQuery}}");
+        int conditionOrdinal = 0;
+        if (where != null)
+        {
+            sqlBuilder.Append($" WHERE {where.CreateQueryAndParameter(ref parameters, ref conditionOrdinal)}");
+        }
+        if (having != null)
+        {
+            sqlBuilder.Append($" HAVING {having.CreateQueryAndParameter(ref parameters, ref conditionOrdinal)}");
+        }
+        if (order != null)
+        {
+            sqlBuilder.Append($" ORDER BY {order.CreateQuery()}");
+        }
+        if (0 < limit)
+        {
+            sqlBuilder.Append($" LIMIT {limit}");
+        }
+        if (0 < offset)
+        {
+            sqlBuilder.Append($" OFFSET {offset}");
+        }
+
+        await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
+        foreach (var parameter in parameters)
+        {
+            command.Parameters.Add(parameter);
+        }
+        await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            int readerOrdinal = 0;
+            var result = new {{className}}();
+{{dbColumns.ForEachLines(x => $"selectColumns.HasFlag(DbQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
+            yield return result;
+        }
+    }
+
+    public static IAsyncEnumerable<{{className}}> SelectAsync(
+        NpgsqlConnection connection,
+        DbQueryType selectColumns,
         IDbCondition? where = null,
         IDbCondition? having = null,
         IDbOrder? order = null,

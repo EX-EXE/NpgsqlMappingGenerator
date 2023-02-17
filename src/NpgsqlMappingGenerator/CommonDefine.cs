@@ -89,8 +89,12 @@ namespace NpgsqlMappingGenerator
         //! [AutoCreate]
         public static readonly string DbAutoCreateAttributeName = "DbAutoCreateAttribute";
         public static readonly string DbAutoCreateAttributeFullName = $"{Namespace}.{DbAutoCreateAttributeName}";
-        public static readonly string DbAutoCreateType_Insert = "Insert";
-        public static readonly string DbAutoCreateType_Update = "Update";
+        public static readonly string DbAutoCreateName_None = "None";
+        public static readonly string DbAutoCreateName_Insert = "Insert";
+        public static readonly string DbAutoCreateName_Update = "Update";
+        public static readonly int DbAutoCreateValue_None = 0;
+        public static readonly int DbAutoCreateValue_Insert = 1 << 0;
+        public static readonly int DbAutoCreateValue_Update = 1 << 1;
 
         public static void GenerateDbBase(IncrementalGeneratorPostInitializationContext context)
         {
@@ -247,8 +251,9 @@ using System;
 [Flags]
 public enum DbAutoCreateType
 {
-    {{DbAutoCreateType_Insert}}     = 1 << 0,
-    {{DbAutoCreateType_Update}}   = 1 << 1,
+    {{DbAutoCreateName_None}}   = {{DbAutoCreateValue_None}},
+    {{DbAutoCreateName_Insert}} = {{DbAutoCreateValue_Insert}},
+    {{DbAutoCreateName_Update}} = {{DbAutoCreateValue_Update}}
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 internal sealed class {{CommonDefine.DbAutoCreateAttributeName}}<T> : Attribute

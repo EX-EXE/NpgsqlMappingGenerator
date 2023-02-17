@@ -37,11 +37,11 @@ namespace NpgsqlMappingGenerator.Utility
             {
                 var autoCreateClass = autoCreateAttribute.GenericTypes.First().FullNameWithGenerics;
                 var autoCreateArgument = autoCreateAttribute.ArgumentStrings.FirstOrDefault();
-                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateType_Insert))
+                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateName_Insert))
                 {
                     insertDefault = $"{autoCreateClass}.CreateInsertValue()";
                 }
-                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateType_Update))
+                if (autoCreateArgument.Contains(CommonDefine.DbAutoCreateName_Update))
                 {
                     updateDefault = $"{autoCreateClass}.CreateUpdateValue()";
                 }

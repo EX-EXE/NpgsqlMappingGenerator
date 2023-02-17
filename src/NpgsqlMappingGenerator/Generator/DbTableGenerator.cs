@@ -61,34 +61,10 @@ internal sealed class {{CommonDefine.DbColumnAttributeName}}<T> : Attribute
             return;
         }
         var classInfo = AnalyzeClassInfo.Analyze(typeSymbol, cancellationToken);
-        var dbTableName = classInfo.GetDbTableName();
-
-        // DbColumns
-        var dbQueryInfos = new List<DbColumnInfo>();
-        var dbColumnInfos = new List<DbColumnInfo>();
-        var dbAggregateInfos = new List<DbColumnInfo>();
-        var dbAutoCreateInfos = new List<DbAutoCreateInfo>();
-        foreach (var propertyInfo in classInfo.Properties)
-        {
-            var columnInfo = propertyInfo.GetDbColumnInfo();
-            if (columnInfo == null)
-            {
-                continue;
-            }
-            // Column
-            dbQueryInfos.Add(columnInfo);
-            dbColumnInfos.Add(columnInfo);
-            // Aggregate
-            var aggregateInfos = propertyInfo.GetDbAggregateInfos(columnInfo);
-            dbQueryInfos.AddRange(aggregateInfos);
-            dbAggregateInfos.AddRange(aggregateInfos);
-            // AutoCreate
-            var autoCreateInfo = propertyInfo.GetDbAutoCreateInfos();
-            if (autoCreateInfo != null)
-            {
-                dbAutoCreateInfos.Add(autoCreateInfo);
-            }
-        }
+        var dbTable = AnalyzeDbTable.Analyze(classInfo, cancellationToken);
+        var dbColumns = dbTable.DbColumns.Values.ToArray();
+        var dbAggregates = dbColumns.SelectMany(x => x.AggregateColumns).ToArray();
+        var dbQueries = dbColumns.Concat(dbAggregates).ToArray();
 
         // Source
         var sourceCode = $$"""
@@ -111,14 +87,16 @@ using {{CommonDefine.Namespace}};
 partial class {{classInfo.Type.ShortName}}
 {
 {{OutputSourceUtility.CreateDbTableProperty(classInfo)}}
-{{OutputSourceUtility.CreateProperty(dbAggregateInfos)}}
-{{OutputSourceUtility.CreateDbColumnType(dbColumnInfos, dbQueryInfos)}}
-{{OutputSourceUtility.CreateDbParam(dbQueryInfos)}}
+{{OutputSourceUtility.CreateProperty(dbAggregates)}}
+
+{{OutputSourceUtility.CreateDbType(dbColumns,dbQueries,Array.Empty<(string,string)>())}}
+
+{{OutputSourceUtility.CreateDbParam(dbColumns)}}
 
 {{OutputSourceUtility.CreateDbCondition()}}
 {{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueryInfos)}}
+{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbColumns, string.Empty)}}
 
     public static async ValueTask<int> InsertAsync(
         NpgsqlConnection connection,
@@ -132,7 +110,7 @@ partial class {{classInfo.Type.ShortName}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{dbAutoCreateInfos.Where(x => !string.IsNullOrEmpty(x.InsertFunc)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertFunc}));").OutputLine(2)).OutputLine()}}
+{{dbColumns.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -167,7 +145,7 @@ partial class {{classInfo.Type.ShortName}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{dbAutoCreateInfos.Where(x => !string.IsNullOrEmpty(x.UpdateFunc)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateFunc}));").OutputLine(2)).OutputLine()}}
+{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -220,40 +198,4 @@ partial class {{classInfo.Type.ShortName}}
         // AddSourceで出力
         context.AddSource($"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}.{classInfo.Type.FullName}.g.cs", sourceCode);
     }
-
-    //public static class DiagnosticDescriptors
-    //{
-    //    public static readonly DiagnosticDescriptor NotAllowedStringType = new(
-    //        id: "000",
-    //        title: "String type is not allowed.",
-    //        messageFormat: "String type is not allowed.",
-    //        category: GeneratorNamespace,
-    //        defaultSeverity: DiagnosticSeverity.Error,
-    //        isEnabledByDefault: true);
-
-    //    public static readonly DiagnosticDescriptor NotAllowedDuplicateType = new(
-    //        id: "001",
-    //        title: "Duplicate type is not allowed.",
-    //        messageFormat: "Duplicate type is not allowed.",
-    //        category: GeneratorNamespace,
-    //        defaultSeverity: DiagnosticSeverity.Error,
-    //        isEnabledByDefault: true);
-
-    //    public static readonly DiagnosticDescriptor NotAllowedSameTypes = new(
-    //        id: "002",
-    //        title: "Same types is not allowed.",
-    //        messageFormat: "Same types is not allowed.",
-    //        category: GeneratorNamespace,
-    //        defaultSeverity: DiagnosticSeverity.Error,
-    //        isEnabledByDefault: true);
-
-    //    public static readonly DiagnosticDescriptor NotAllowedStringOnly = new(
-    //        id: "003",
-    //        title: "String only is not allowed.",
-    //        messageFormat: "String only is not allowed.",
-    //        category: GeneratorNamespace,
-    //        defaultSeverity: DiagnosticSeverity.Error,
-    //        isEnabledByDefault: true);
-    //}
-
 }
