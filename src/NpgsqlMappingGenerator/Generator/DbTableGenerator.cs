@@ -258,6 +258,84 @@ partial class {{{classInfo.Type.ShortName}}}
             upsertParams,
             cancellationToken);
     }
+
+    public static async ValueTask<int> UpdateAppendTextAsync(
+        NpgsqlConnection connection,
+        IEnumerable<IDbParam> appendParams,
+        IEnumerable<IDbParam> updateParams,
+        IDbCondition? where = null,
+        {{{CommonDefine.DbAppendTypeFullName}}} appendType = {{{CommonDefine.DbAppendTypeFullName}}}.{{{CommonDefine.DbAppendTypeName_Append}}},
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        int ordinal = 0;
+        var parameters = new List<NpgsqlParameter>();
+
+        var updateQueryList = new List<string>();
+        var parameterNames = new List<string>();
+        var appendParamList = appendParams.ToList();
+        foreach (var appendParam in appendParamList)
+        {
+            var columnName = appendParam.DbQuery;
+            var paramName = $"@{columnName}{ordinal++}";
+            parameters.Add(appendParam.CreateParameter(paramName));
+            if(appendType == {{{CommonDefine.DbAppendTypeFullName}}}.{{{CommonDefine.DbAppendTypeName_Append}}})
+            {
+                updateQueryList.Add($"{columnName} = COALESCE({columnName}, '') || {paramName}");
+            }
+            else if(appendType == {{{CommonDefine.DbAppendTypeFullName}}}.{{{CommonDefine.DbAppendTypeName_Prepend}}})
+            {
+                updateQueryList.Add($"{columnName} = {paramName} || COALESCE({columnName}, '')");
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+        var updateParamList = updateParams.ToList();
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!appendParamList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any() && !updateParamList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"updateParamList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
+        foreach (var updateParam in updateParamList)
+        {
+            var columnName = updateParam.DbQuery;
+            var paramName = $"@{columnName}{ordinal++}";
+            updateQueryList.Add($"{columnName} = {paramName}");
+            parameters.Add(updateParam.CreateParameter(paramName));
+        }
+
+        var sqlBuilder = new StringBuilder($"UPDATE {DbTableName} SET {string.Join(",",updateQueryList)}");
+        if (where != null)
+        {
+            sqlBuilder.Append($" WHERE {where.CreateQueryAndParameter(ref parameters, ref ordinal)}");
+        }
+
+        var sql = sqlBuilder.ToString();
+        await using var command = new NpgsqlCommand(sql, connection);
+        foreach (var parameter in parameters)
+        {
+            command.Parameters.Add(parameter);
+        }
+        await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
+        return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public static ValueTask<int> UpdateAppendTextAsync(
+        NpgsqlConnection connection,
+        IEnumerable<IDbParam> appendParams,
+        IDbCondition? where = null,
+        {{{CommonDefine.DbAppendTypeFullName}}} appendType = {{{CommonDefine.DbAppendTypeFullName}}}.{{{CommonDefine.DbAppendTypeName_Append}}},
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateAppendTextAsync(
+            connection,
+            appendParams,
+            Array.Empty<IDbParam>(),
+            where,
+            appendType,
+            cancellationToken);
+    }
+
 }
 
 """;

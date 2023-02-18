@@ -96,6 +96,14 @@ namespace NpgsqlMappingGenerator
         public static readonly int DbAutoCreateValue_Insert = 1 << 0;
         public static readonly int DbAutoCreateValue_Update = 1 << 1;
 
+        //! [AppendType]
+        public static readonly string DbAppendTypeName = "DbAppendType";
+        public static readonly string DbAppendTypeFullName = $"{Namespace}.{DbAppendTypeName}";
+        public static readonly string DbAppendTypeName_Append = "Append";
+        public static readonly string DbAppendTypeName_Prepend = "Prepend";
+        public static readonly int DbAppendTypeValue_Append = 1 << 0;
+        public static readonly int DbAppendTypeValue_Prepend = 1 << 1;
+
         public static void GenerateDbBase(IncrementalGeneratorPostInitializationContext context)
         {
             // DbCompareOperator
@@ -225,8 +233,8 @@ public static class DbOrderTypeExtensins
 """);
             // DbAggregate
             context.AddSource($"{Namespace}.DbAggregate.cs", $$"""
-namespace NpgsqlMappingGenerator;
 using System;
+namespace NpgsqlMappingGenerator;
 [Flags]
 public enum DbAggregateType
 {
@@ -246,8 +254,8 @@ internal sealed class {{CommonDefine.DbAggregateAttributeName}} : Attribute
 """);
             // DbAutoCreateAttribute
             context.AddSource($"{Namespace}.{CommonDefine.DbAutoCreateAttributeName}.cs", $$"""
-namespace NpgsqlMappingGenerator;
 using System;
+namespace NpgsqlMappingGenerator;
 [Flags]
 public enum DbAutoCreateType
 {
@@ -276,6 +284,17 @@ public class DbAutoCreateDateTimeUtcNow
         => DateTime.UtcNow;
     public static DateTime CreateUpdateValue()
         => DateTime.UtcNow;
+}
+""");
+            // Append
+            context.AddSource($"{CommonDefine.DbAppendTypeFullName}.cs", $$"""
+using System;
+namespace NpgsqlMappingGenerator;
+[Flags]
+public enum {{CommonDefine.DbAppendTypeName}}
+{
+    {{DbAppendTypeName_Append}}  = {{DbAppendTypeValue_Append}},
+    {{DbAppendTypeName_Prepend}} = {{DbAppendTypeValue_Prepend}},
 }
 """);
         }
