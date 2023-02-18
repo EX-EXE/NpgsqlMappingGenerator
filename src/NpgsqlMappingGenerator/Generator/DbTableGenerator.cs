@@ -110,7 +110,7 @@ partial class {{{classInfo.Type.ShortName}}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}}
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -145,7 +145,7 @@ partial class {{{classInfo.Type.ShortName}}}
         var parameterNames = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var dbParamsList = dbParams.ToList();
-{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!dbParamsList.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any()".OutputIfStatement($"dbParamsList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
         foreach (var dbParam in dbParamsList)
         {
             var columnName = dbParam.DbQuery;
@@ -213,7 +213,7 @@ partial class {{{classInfo.Type.ShortName}}}
         var insertColumnNames = new List<string>();
         var insertParameterNames = new List<string>();
         var insertParameterList = insertParams.ToList();
-{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!insertParams.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"insertParameterList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}}
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.InsertDefault)).ForEachLines(x => $"!insertParams.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any()".OutputIfStatement($"insertParameterList.Add(new DbParam{x.PropertyName}({x.InsertDefault}));").OutputLine(2)).OutputLine()}}}
         foreach (var insertParameter in insertParameterList)
         {
             var columnName = insertParameter.DbQuery;
@@ -226,7 +226,7 @@ partial class {{{classInfo.Type.ShortName}}}
         // Update
         var updateParameterQueries = new List<string>();
         var updateParameterList = updateParams.ToList();
-{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!updateParams.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"updateParameterList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!updateParams.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any()".OutputIfStatement($"updateParameterList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
         foreach (var updateParameter in updateParameterList)
         {
             var columnName = updateParameter.DbQuery;
@@ -295,7 +295,7 @@ partial class {{{classInfo.Type.ShortName}}}
         }
 
         var updateParamList = updateParams.ToList();
-{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!appendParamList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any() && !updateParamList.Where(x => x.QueryType == DbColumnQueryType.{x.PropertyName}).Any()".OutputIfStatement($"updateParamList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
+{{{dbColumns.Where(x => !string.IsNullOrEmpty(x.UpdateDefault)).ForEachLines(x => $"!appendParamList.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any() && !updateParamList.Where(x => x.QueryType == DbQueryType.{x.PropertyName}).Any()".OutputIfStatement($"updateParamList.Add(new DbParam{x.PropertyName}({x.UpdateDefault}));").OutputLine(2)).OutputLine()}}}
         foreach (var updateParam in updateParamList)
         {
             var columnName = updateParam.DbQuery;

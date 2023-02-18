@@ -285,6 +285,13 @@ public class DbAutoCreateDateTimeUtcNow
     public static DateTime CreateUpdateValue()
         => DateTime.UtcNow;
 }
+public class DbAutoCreateGuid
+{
+    public static Guid CreateInsertValue()
+        => Guid.NewGuid();
+    public static Guid CreateUpdateValue()
+        => Guid.NewGuid();
+}
 """);
             // Append
             context.AddSource($"{CommonDefine.DbAppendTypeFullName}.cs", $$"""
