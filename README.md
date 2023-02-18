@@ -165,4 +165,20 @@ await foreach (var userViewRow in UserView.SelectAsync(
 }
 ```
 
+## DbTable Attribute
+| Attribute | Description |
+|---|---|
+|[DbTableGenerator(*TableName*)]|DbTable Hook Attribute|
+|[DbColumn<*DbParamType*>(<ColumnName>)]|Specifies the column name.|
 
+## DbView Attribute
+| Attribute | Description |
+|---|---|
+|[DbViewGenerator(*TableName*)]|DbView Hook Attribute|
+|[DbViewTable<*BaseTableType*>]|Specifying the base table.|
+|[DbViewInnerJoin<*JoinTableType*,*CompTableType*>(*JoinColumnName*,*CompColumnName*)]|Specifies a join between tables.|
+|[DbViewLeftOuterJoin<*JoinTableType*,*CompTableType*>(*JoinColumnName*,*CompColumnName*)]|Specifies a join between tables.|
+|[DbViewRightOuterJoin<*JoinTableType*,*CompTableType*>(*JoinColumnName*,*CompColumnName*)]|Specifies a join between tables.|
+|[DbViewFullOuterJoin<*JoinTableType*,*CompTableType*>(*JoinColumnName*,*CompColumnName*)]|Specifies a join between tables.|
+|[DbViewCrossJoin<*JoinTableType*,*CompTableType*>(*JoinColumnName*,*CompColumnName*)]|Specifies a join between tables.|
+|[DbViewColumn<*DbTable*>(*ColumnName*)]|Specifies the columns to use.|
