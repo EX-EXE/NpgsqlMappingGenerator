@@ -1,3 +1,4 @@
+[![NuGet version](https://badge.fury.io/nu/TextImageGenerator.svg)](https://badge.fury.io/nu/NpgsqlMappingGenerator)
 # NpgsqlMappingGenerator
 Generate a function that uses Npgsql.  
 For example Select/Insert/Update/Delete functions.
