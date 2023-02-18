@@ -1,5 +1,6 @@
 # NpgsqlMappingGenerator
-Using C# Source Generate.
+Generate a function that uses Npgsql.  
+For example Select/Insert/Update/Delete functions.
 
 ## Quick Start
 ### Install Npgsql
