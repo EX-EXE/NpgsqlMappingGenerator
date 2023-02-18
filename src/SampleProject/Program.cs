@@ -12,11 +12,21 @@ using NpgsqlMappingGenerator;
 [DbViewLeftOuterJoinAttributeName<Film, FilmCategory>(nameof(Film.FilmId), nameof(FilmCategory.FilmId))]
 [DbViewInnerJoin<FilmActor, Film>(nameof(FilmActor.FilmId), nameof(Film.FilmId))]
 [DbViewInnerJoin<Actor, FilmActor>(nameof(Actor.ActorId), nameof(FilmActor.ActorId))]
-[DbViewColumn<Film>(nameof(Film.FilmId))]
+public partial class FilmList
+{
+}
+
+[DbViewGenerator]
+[DbViewTable<Category>]
+[DbViewLeftOuterJoinAttributeName<FilmCategory, Category>(nameof(FilmCategory.CategoryId), nameof(Category.CategoryId))]
+[DbViewLeftOuterJoinAttributeName<Film, FilmCategory>(nameof(Film.FilmId), nameof(FilmCategory.FilmId))]
+[DbViewInnerJoin<FilmActor, Film>(nameof(FilmActor.FilmId), nameof(Film.FilmId))]
+[DbViewInnerJoin<Actor, FilmActor>(nameof(Actor.ActorId), nameof(FilmActor.ActorId))]
+[DbViewColumn<Film>(nameof(Film.FilmId),DbAggregateType.Min | DbAggregateType.Max)]
 [DbViewColumn<Film>(nameof(Film.Title))]
 [DbViewColumn<Film>(nameof(Film.Description))]
 [DbViewColumn<Category>(nameof(Category.Name))]
-public partial class FilmList
+public partial class FilmList2
 {
 }
 
@@ -125,21 +135,59 @@ internal class Program
         //    Actor.DbParamLastName.Create("fB")}, 
         //    Actor.DbCondition.Create(DbCompareOperator.GreaterThan, Actor.DbParamActorId.Create(200)));
 
-        await foreach (var row in FilmList.SelectAsync(
-            conn,
-            FilmList.DbColumnQueryType.All))
-        {
-            Console.WriteLine($" {row.Title} {row.Description} {row.Name}");
-        }
-        await Actor.InsertAsync(conn, new Actor.IDbParam[]{
-            new Actor.DbParamFirstName("A"),
-            new Actor.DbParamLastName("B"),
-        });
+        //await foreach (var row in FilmList.SelectAsync(
+        //    conn,
+        //    FilmList.DbQueryType.All,
+        //    //FilmList.DbCondition.Create(DbCompareOperator.Like,new FilmList.DbParamFilmDescription("%Brilliant%")),
+        //   new  FilmList.DbConditions(
+        //        DbLogicOperator.Or,
+        //        new FilmList.DbCondition(DbCompareOperator.Equals, new FilmList.DbParamActorFirstName("Bette")),
+        //        new FilmList.DbCondition(DbCompareOperator.Equals, new FilmList.DbParamActorFirstName("Cuba")))
+        //    ))
+        //{
+        //    Console.WriteLine($"{row.FilmFilmId} {row.FilmTitle} {row.FilmDescription} {row.CategoryName}");
+        //}
 
+        await Actor.UpdateAppendTextAsync(conn,
+            new Actor.IDbParam[]
+            {
+                new Actor.DbParamFirstName("Append1"),
+                new Actor.DbParamLastName("Append2"),
+            },
+            Actor.DbParamActorId.CreateCondition(DbCompareOperator.Equals, 215));
+        await Actor.UpdateAppendTextAsync(conn,
+            new Actor.IDbParam[]
+            {
+                new Actor.DbParamFirstName("Append1"),
+                new Actor.DbParamLastName("Append2"),
+            },
+            Actor.DbParamActorId.CreateCondition(DbCompareOperator.Equals, 215),
+            DbAppendType.Prepend);
+
+
+        await Actor.UpsertAsync(conn, Actor.DbColumnType.ActorId,
+            new Actor.IDbParam[]
+            {
+                new Actor.DbParamActorId(225),
+                new Actor.DbParamFirstName("1"),
+                new Actor.DbParamLastName("22"),
+            });
+
+        await Actor.UpsertAsync(conn, Actor.DbColumnType.ActorId,
+            new Actor.IDbParam[]
+            {
+                new Actor.DbParamFirstName("Upsert"),
+                new Actor.DbParamLastName("Insert"),
+            },
+            new Actor.IDbParam[]
+            {
+                new Actor.DbParamFirstName("Upsert"),
+                new Actor.DbParamLastName("Update"),
+            });
 
         await foreach (var row in Film.SelectAsync(
             conn,
-            Film.DbColumnQueryType.All))
+            Film.DbQueryType.All))
         {
             Console.WriteLine($" {row.RentalRate} {row.Title} {row.ReleaseYear}");
         }
@@ -147,7 +195,7 @@ internal class Program
 
         await foreach (var row in Actor.SelectAsync(
             conn,
-            Actor.DbColumnQueryType.ActorIdCount | Actor.DbColumnQueryType.ActorIdMin | Actor.DbColumnQueryType.ActorIdMax))
+            Actor.DbQueryType.ActorIdCount | Actor.DbQueryType.ActorIdMin | Actor.DbQueryType.ActorIdMax))
         {
             Console.WriteLine($"{row.ActorIdCount} {row.ActorIdMax} {row.ActorIdMin}");
         }
@@ -155,11 +203,12 @@ internal class Program
 
         await foreach (var row in Actor.SelectAsync(
             conn,
-            Actor.DbColumnQueryType.AllColumn,
-            Actor.DbConditions.Create(
+            Actor.DbQueryType.AllColumns,
+            new Actor.DbConditions(
                 DbLogicOperator.And,
-                Actor.DbCondition.Create(DbCompareOperator.GreaterThanOrEqual, new Actor.DbParamActorId(100)),
-                Actor.DbCondition.Create(DbCompareOperator.LessThan, new Actor.DbParamActorId(150)))))
+                Actor.DbParamActorId.CreateCondition(DbCompareOperator.Equals,100),
+                new Actor.DbCondition(DbCompareOperator.GreaterThanEqual, new Actor.DbParamActorId(100)),
+                new Actor.DbCondition(DbCompareOperator.LessThan, new Actor.DbParamActorId(150)))))
         {
             Console.WriteLine($"{row.ActorId} {row.FirstName} {row.LastName} {row.LastUpdate}");
         }
