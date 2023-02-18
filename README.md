@@ -9,7 +9,7 @@ PM> Install-Package [Npgsql](https://www.nuget.org/packages/Npgsql/)
 ### Install NpgsqlMappingGenerator
 PM> Install-Package [NpgsqlMappingGenerator](https://www.nuget.org/packages/NpgsqlMappingGenerator/)
 
-### Define DBTable
+### Define DbTable
 ```csharp
 [DbTableGenerator("public.user")]
 public partial class User
@@ -70,6 +70,99 @@ await User.UpdateAsync(conn,
 // Delete
 await User.DeleteAsync(conn,
     User.DbParamLastName.CreateCondition(DbCompareOperator.Equals, "Two"));
+```
+
+
+### Define DbView
+```csharp
+[DbViewGenerator]
+[DbViewTable<User>]
+[DbViewInnerJoin<UserType, User>(nameof(UserType.Id), nameof(User.UserTypeId))]
+[DbViewColumn<User>(nameof(User.FirstName))]
+[DbViewColumn<User>(nameof(User.LastName))]
+[DbViewColumn<UserType>(nameof(UserType.Name))]
+public partial class UserView
+{
+}
+
+[DbTableGenerator("public.user")]
+public partial class User
+{
+    [DbColumn<DbParamGuid>("id")]
+    [DbAutoCreate<DbAutoCreateGuid>(DbAutoCreateType.Insert)]
+    public Guid Id { get; set; }
+
+    [DbColumn<DbParamGuid>("user_type_id")]
+    public Guid UserTypeId { get; set; }
+
+    [DbColumn<DbParamString>("first_name")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [DbColumn<DbParamString>("last_name")]
+    public string LastName { get; set; } = string.Empty;
+
+    [DbColumn<DbParamDateTime>("last_update")]
+    [DbAutoCreate<DbAutoCreateDateTimeNow>(DbAutoCreateType.Insert | DbAutoCreateType.Update)]
+    public DateTime LastUpdate { get; set; }
+}
+
+[DbTableGenerator("public.user_type")]
+public partial class UserType
+{
+    [DbColumn<DbParamGuid>("id")]
+    [DbAutoCreate<DbAutoCreateGuid>(DbAutoCreateType.Insert)]
+    public Guid Id { get; set; }
+
+    [DbColumn<DbParamString>("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [DbColumn<DbParamDateTime>("last_update")]
+    [DbAutoCreate<DbAutoCreateDateTimeNow>(DbAutoCreateType.Insert | DbAutoCreateType.Update)]
+    public DateTime LastUpdate { get; set; }
+}
+```
+
+### Usage
+```csharp
+// Insert TestData
+foreach (var type in new[] { "TypeOne", "TypeTwo", "TypeThree" })
+{
+    var typeGuid = Guid.NewGuid();
+    await UserType.InsertAsync(conn,
+        new UserType.IDbParam[]
+        {
+            new UserType.DbParamId(typeGuid),
+            new UserType.DbParamName(type),
+        }).ConfigureAwait(false);
+    foreach (var user in new[] { "UserOne", "UserTwo", "UserThree" })
+    {
+        await User.InsertAsync(conn,
+            new User.IDbParam[]
+            {
+                new User.DbParamUserTypeId(typeGuid),
+                new User.DbParamFirstName("Test"),
+                new User.DbParamLastName(user)
+            }).ConfigureAwait(false);
+    }
+}
+
+// Select
+// [Result]
+// Test UserThree TypeOne
+// Test UserTwo TypeOne
+// Test UserOne TypeOne
+// Test UserThree TypeTwo
+// Test UserTwo TypeTwo
+// Test UserOne TypeTwo
+// Test UserThree TypeThree
+// Test UserTwo TypeThree
+// Test UserOne TypeThree
+await foreach (var userViewRow in UserView.SelectAsync(
+    conn,
+    UserView.DbQueryType.All))
+{
+    Console.WriteLine($"{userViewRow.UserFirstName} {userViewRow.UserLastName} {userViewRow.UserTypeName}");
+}
 ```
 
 
