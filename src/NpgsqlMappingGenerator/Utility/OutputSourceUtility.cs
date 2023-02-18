@@ -39,6 +39,9 @@ namespace NpgsqlMappingGenerator.Utility
     public static readonly DbQueryType[] DbQueryTypes = {
 {{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName},").OutputLine(3)}}
         };
+    public static readonly DbColumnType[] DbColumnTypes = {
+{{dbColumns.ForEachLines(x => $"DbColumnType.{x.PropertyName},").OutputLine(3)}}
+        };
     public static string GetDbQuery(DbQueryType queryType)
         => queryType switch
         {
