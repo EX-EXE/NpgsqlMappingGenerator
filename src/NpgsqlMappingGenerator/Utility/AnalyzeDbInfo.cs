@@ -186,6 +186,7 @@ namespace NpgsqlMappingGenerator.Utility
         public AnalyzePropertyInfo PropertyInfo { get; init; }
         public string PropertyType { get; private set; } = string.Empty;
         public string PropertyName { get; set; } = string.Empty;
+        public string PropertyDefaultValue { get; set; } = string.Empty;
         public string ConverterType { get; private set; } = string.Empty;
 
         public string DbColumnName { get; set; } = string.Empty;
@@ -212,6 +213,7 @@ namespace NpgsqlMappingGenerator.Utility
                 // Property
                 result.PropertyType = analyzePropertyInfo.Type.FullNameWithGenerics;
                 result.PropertyName = analyzePropertyInfo.Name;
+                result.PropertyDefaultValue = analyzePropertyInfo.HasDefaultValue ? analyzePropertyInfo.DefaultValue : string.Empty;
                 // DbColumnName
                 var dbColumnAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == CommonDefine.DbColumnAttributeFullName);
                 if (dbColumnAttribute != default &&

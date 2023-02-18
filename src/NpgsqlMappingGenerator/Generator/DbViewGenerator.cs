@@ -143,7 +143,7 @@ using {{CommonDefine.Namespace}};
 partial class {{classInfo.Type.ShortName}}
 {
 {{OutputSourceUtility.CreateDbTableProperty(dbView.BaseTable)}}
-{{OutputSourceUtility.CreateProperty(dbQueries)}}
+{{OutputSourceUtility.CreateColumnProperty(dbQueries)}}
 
 {{OutputSourceUtility.CreateDbType(dbColumns, dbQueries, enumKeyValueList.Select(x => ($"All{x.TableClassName}", x.PropertyNames.OutputLine("|"))).ToArray())}}
 

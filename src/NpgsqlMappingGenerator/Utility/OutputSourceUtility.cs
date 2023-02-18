@@ -11,9 +11,9 @@ namespace NpgsqlMappingGenerator.Utility
             => $$"""
     public static readonly string DbTableName = "{{dbTable.DbTableName}}";
 """;
-        public static string CreateProperty(AnalyzeDbColumn[] dbColumns)
+        public static string CreateColumnProperty(AnalyzeDbColumn[] dbColumns)
         {
-            return dbColumns.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; }""").OutputLine(1);
+            return dbColumns.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; } {{(string.IsNullOrEmpty(x.PropertyDefaultValue) ? string.Empty : $" = {x.PropertyDefaultValue};")}}""").OutputLine(1);
         }
 
         public static string CreateDbType(AnalyzeDbColumn[] dbColumns, AnalyzeDbColumn[] dbQueries, (string Key, string Value)[] AppendEnumValues)
@@ -73,9 +73,9 @@ namespace NpgsqlMappingGenerator.Utility
         public string DbQuery => GetDbQuery(QueryType);
         public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
-        public static DbParam{{dbColumn.PropertyName}} Create({{dbColumn.PropertyType}} value)
+        public static DbCondition CreateCondition(DbCompareOperator compareOperator ,{{dbColumn.PropertyType}} value)
         {
-            return new DbParam{{dbColumn.PropertyName}}(value);
+            return new DbCondition(compareOperator,new DbParam{{dbColumn.PropertyName}}(value));
         }
         public DbParam{{dbColumn.PropertyName}}()
         {
