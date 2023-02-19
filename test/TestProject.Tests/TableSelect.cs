@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace TestProject.Tests;
 
@@ -6,8 +7,8 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
 {
     List<(string, string)> InsertData = new();
 
-    public TableSelect()
-        : base(nameof(TableSelect))
+    public TableSelect(ITestOutputHelper outputHelper)
+        : base(outputHelper,nameof(TableSelect))
     {
         //UserData.CreateTable(Connection);
     }
