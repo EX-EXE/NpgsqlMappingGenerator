@@ -97,7 +97,7 @@ namespace NpgsqlMappingGenerator.Utility
             return dbParams.ToString();
         }
 
-        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbColumns, string joinQuery)
+        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string joinQuery)
             => $$"""
     public static async IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
@@ -171,7 +171,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             int readerOrdinal = 0;
             var result = new {{className}}();
-{{dbColumns.ForEachLines(x => $"selectColumns.HasFlag(DbQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
+{{dbQueries.ForEachLines(x => $"selectColumns.HasFlag(DbQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
             yield return result;
         }
     }

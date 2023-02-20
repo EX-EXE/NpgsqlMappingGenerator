@@ -96,7 +96,7 @@ partial class {{{classInfo.Type.ShortName}}}
 {{{OutputSourceUtility.CreateDbCondition()}}}
 {{{OutputSourceUtility.CreateDbOrder()}}}
 
-{{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbColumns, string.Empty)}}}
+{{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, string.Empty)}}}
 
     public static async ValueTask<int> InsertAsync(
         NpgsqlConnection connection,
