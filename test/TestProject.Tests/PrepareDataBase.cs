@@ -33,7 +33,7 @@ namespace TestProject.Tests
             OutputHelper.WriteLine($"User : {user}");
 
             var connectionString = $"Host={host};Username={user};Password={pass};";
-            var createDatabase = $"{prefixDataBaseName.ToLower()}_{DateTime.Now.ToString("yyyyMMddHHmmss")}";
+            var createDatabase = $"{prefixDataBaseName.ToLower()}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}";
 
             // Create DataBase
             using var createDataSource = NpgsqlDataSource.Create($"{connectionString}DataBase={database};");
