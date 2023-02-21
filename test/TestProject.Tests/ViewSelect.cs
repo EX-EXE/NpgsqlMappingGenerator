@@ -8,6 +8,8 @@ using TestProject;
 using Xunit.Abstractions;
 using FluentAssertions;
 
+namespace TestProject.Tests;
+
 public class ViewSelect : PrepareDataBase, IAsyncLifetime
 {
     List<UserData> UserList = new();
