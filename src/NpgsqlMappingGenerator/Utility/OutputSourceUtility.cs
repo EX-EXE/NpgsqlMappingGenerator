@@ -46,7 +46,7 @@ namespace NpgsqlMappingGenerator.Utility
         => queryType switch
         {
 {{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.DbQuery}\",").OutputLine(3)}}
-            _ => throw new NotImplementedException(),
+            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
         };
 """;
         }

@@ -189,7 +189,7 @@ public static class DbCompareOperatorExtensins
             DbCompareOperator.MatchRegexInsensitive => "~*",
             DbCompareOperator.NotMatchRegexSensitive => "!~",
             DbCompareOperator.NotMatchRegexInsensitive => "!~*",
-            _ => throw new NotImplementedException(),
+            _ => throw new NotImplementedException($"{nameof(compareOperator)} : {compareOperator}"),
         };
 }
 """);
@@ -208,7 +208,7 @@ public static class DbLogicOperatorExtensins
         {
             DbLogicOperator.And => "AND",
             DbLogicOperator.Or => "OR",
-            _ => throw new NotImplementedException(),
+            _ => throw new NotImplementedException($"{nameof(logicOperator)} : {logicOperator}"),
         };
 }
 """);
@@ -227,7 +227,7 @@ public static class DbOrderTypeExtensins
         {
             DbOrderType.Asc => "ASC",
             DbOrderType.Desc => "DESC",
-            _ => throw new NotImplementedException(),
+            _ => throw new NotImplementedException($"{nameof(orderType)} : {orderType}"),
         };
 }
 """);
@@ -292,6 +292,20 @@ public class DbAutoCreateGuid
     public static Guid CreateUpdateValue()
         => Guid.NewGuid();
 }
+public class DbAutoCreateDateTimeOffsetNow
+{
+    public static DateTimeOffset CreateInsertValue()
+        => DateTimeOffset.Now;
+    public static DateTimeOffset CreateUpdateValue()
+        => DateTimeOffset.Now;
+}
+public class DbAutoCreateDateTimeOffsetUtcNow
+{
+    public static DateTimeOffset CreateInsertValue()
+        => DateTimeOffset.UtcNow;
+    public static DateTimeOffset CreateUpdateValue()
+        => DateTimeOffset.UtcNow;
+}
 """);
             // Append
             context.AddSource($"{CommonDefine.DbAppendTypeFullName}.cs", $$"""
@@ -347,7 +361,13 @@ public class DbParamNullable{{typeInfo.ClassSuffixName}}
 public class DbParam{{typeInfo.ClassSuffixName}}
 {
     public static {{typeInfo.TypeName}} ReadData(NpgsqlDataReader reader, int ordinal)
-        => reader.IsDBNull(ordinal) ? throw new ArgumentException() : reader.{{typeInfo.ReaderFuncName}}(ordinal); 
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            throw new ArgumentException($"DBNull {nameof(ordinal)} : {ordinal}");
+        }
+        return reader.{{typeInfo.ReaderFuncName}}(ordinal);
+    }
 
     public static NpgsqlParameter CreateParameter(string name, {{typeInfo.TypeName}} value)
     {
@@ -380,11 +400,109 @@ public class DbParamNullableString
 public class DbParamString
 {
     public static string ReadData(NpgsqlDataReader reader, int ordinal)
-        => reader.IsDBNull(ordinal) ? throw new ArgumentException() : reader.GetString(ordinal); 
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            throw new ArgumentException($"DBNull {nameof(ordinal)} : {ordinal}");
+        }
+        return reader.GetString(ordinal);
+    }
 
     public static NpgsqlParameter CreateParameter(string name, string value)
     {
         return new NpgsqlParameter<string>(name, value);
+    }
+}
+""");
+            // DateTimeUtc
+            context.AddSource($"{Namespace}.DbParamDateTimeUtc.cs", $$"""
+using Npgsql;
+namespace {{Namespace}};
+public class DbParamNullableDateTimeUtc
+{
+    public static DateTime? ReadData(NpgsqlDataReader reader, int ordinal)
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            return null;
+        }
+        else
+        {
+            return reader.GetDateTime(ordinal);
+        }
+    }
+    public static NpgsqlParameter CreateParameter(string name, DateTime? value)
+    {
+        if(value.HasValue)
+        {
+            return new NpgsqlParameter<DateTime>(name, value.Value.ToUniversalTime());
+        }
+        else
+        {
+            return new NpgsqlParameter(name, DBNull.Value);
+        }
+    }
+}
+public class DbParamDateTimeUtc
+{
+    public static DateTime ReadData(NpgsqlDataReader reader, int ordinal)
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            throw new ArgumentException($"DBNull {nameof(ordinal)} : {ordinal}");
+        }
+        return reader.GetDateTime(ordinal);
+    }
+
+    public static NpgsqlParameter CreateParameter(string name, DateTime value)
+    {
+        return new NpgsqlParameter<DateTime>(name, value.ToUniversalTime());
+    }
+}
+""");
+            // DateTimeOffset
+            context.AddSource($"{Namespace}.DbParamDateTimeOffset.cs", $$"""
+using Npgsql;
+namespace {{Namespace}};
+public class DbParamNullableDateTimeOffset
+{
+    public static DateTimeOffset? ReadData(NpgsqlDataReader reader, int ordinal)
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            return null;
+        }
+        else
+        {
+            return new DateTimeOffset(reader.GetDateTime(ordinal), TimeSpan.Zero);
+        }
+    }
+    public static NpgsqlParameter CreateParameter(string name, DateTimeOffset? value)
+    {
+        if(value.HasValue)
+        {
+            return new NpgsqlParameter<DateTime>(name, value.Value.UtcDateTime);
+        }
+        else
+        {
+            return new NpgsqlParameter(name, DBNull.Value);
+        }
+    }
+}
+public class DbParamDateTimeOffset
+{
+    public static DateTimeOffset ReadData(NpgsqlDataReader reader, int ordinal)
+    {
+        if(reader.IsDBNull(ordinal))
+        {
+            throw new ArgumentException($"DBNull {nameof(ordinal)} : {ordinal}");
+        }
+        return new DateTimeOffset(reader.GetDateTime(ordinal), TimeSpan.Zero);
+    }
+
+    public static NpgsqlParameter CreateParameter(string name, DateTimeOffset value)
+    {
+        return new NpgsqlParameter<DateTime>(name, value.UtcDateTime);
     }
 }
 """);
