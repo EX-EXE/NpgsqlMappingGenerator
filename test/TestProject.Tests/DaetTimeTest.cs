@@ -42,7 +42,7 @@ public class DateTimeTest : PrepareDataBase, IAsyncLifetime
                 new DateTimeTable.DbParamDateTimeOffset(dateTimeOffset),
             }).ConfigureAwait(false);
 
-        await foreach (var row in DateTimeTable.SelectAsync(Connection, DateTimeTable.DbColumnType.All))
+        await foreach (var row in DateTimeTable.SelectAsync(Connection, DateTimeTable.DbQueryType.All))
         {
             OutputHelper.WriteLine($"Select DateTime:{row.DateTime}({row.DateTime.Kind})");
             OutputHelper.WriteLine($"Select DateTimeUtc:{row.DateTimeUtc}({row.DateTimeUtc.Kind})");
