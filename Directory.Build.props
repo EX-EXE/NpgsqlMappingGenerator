@@ -10,6 +10,9 @@
     <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Description>Generate a function that uses Npgsql.</Description>
+    <Description>
+		NpgsqlMappingGenerator is a source generator that generates functions using Npgsql(.NET data provider for PostgreSQL).
+		By adding attributes to C# classes, it generates data mapping and simple SQL command functions using Npgsql.
+	</Description>
   </PropertyGroup>
 </Project>
