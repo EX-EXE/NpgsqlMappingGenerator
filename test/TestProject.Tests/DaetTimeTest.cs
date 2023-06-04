@@ -27,8 +27,8 @@ public class DateTimeTest : PrepareDataBase, IAsyncLifetime
     public async Task Test()
     {
         var dateTime = new DateTime(1990, 1, 2, 3, 4, 5, DateTimeKind.Local);
-        var dateTimeUtc = new DateTime(1990, 7, 8, 9, 10, 11, DateTimeKind.Utc);
-        var dateTimeOffset = new DateTimeOffset(1990, 13, 14, 15, 16, 17, TimeSpan.FromHours(9.0));
+        var dateTimeUtc = new DateTime(1990, 6, 7, 8, 9, 10, DateTimeKind.Utc);
+        var dateTimeOffset = new DateTimeOffset(1990, 1, 2, 3, 4, 5, TimeSpan.FromHours(9.0));
 
         OutputHelper.WriteLine($"Insert {nameof(dateTime)}:{dateTime}({dateTime.Kind})");
         OutputHelper.WriteLine($"Insert {nameof(dateTimeUtc)}:{dateTimeUtc}({dateTime.Kind})");
