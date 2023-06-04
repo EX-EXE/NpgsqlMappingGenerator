@@ -108,6 +108,7 @@ namespace NpgsqlMappingGenerator
         {
             // DbCompareOperator
             context.AddSource($"{Namespace}.DbCompareOperator.cs", $$"""
+using System;
 namespace NpgsqlMappingGenerator;
 
 /// <summary>
@@ -195,6 +196,7 @@ public static class DbCompareOperatorExtensins
 """);
             // DbLogicOperator
             context.AddSource($"{Namespace}.DbLogicOperator.cs", $$"""
+using System;
 namespace NpgsqlMappingGenerator;
 public enum DbLogicOperator
 {
@@ -214,6 +216,7 @@ public static class DbLogicOperatorExtensins
 """);
             // DbOrder
             context.AddSource($"{Namespace}.DbOrder.cs", $$"""
+using System;
 namespace NpgsqlMappingGenerator;
 public enum DbOrderType
 {
@@ -339,6 +342,7 @@ public enum {{CommonDefine.DbAppendTypeName}}
             {
                 // DbCompareOperator
                 context.AddSource($"{Namespace}.DbParam{typeInfo.ClassSuffixName}.cs", $$"""
+using System;
 using Npgsql;
 namespace {{Namespace}};
 public class DbParamNullable{{typeInfo.ClassSuffixName}}
@@ -378,6 +382,7 @@ public class DbParam{{typeInfo.ClassSuffixName}}
             }
             // string
             context.AddSource($"{Namespace}.DbParamString.cs", $$"""
+using System;
 using Npgsql;
 namespace {{Namespace}};
 public class DbParamNullableString
@@ -416,6 +421,7 @@ public class DbParamString
 """);
             // DateTimeUtc
             context.AddSource($"{Namespace}.DbParamDateTimeUtc.cs", $$"""
+using System;
 using Npgsql;
 namespace {{Namespace}};
 public class DbParamNullableDateTimeUtc
@@ -462,6 +468,7 @@ public class DbParamDateTimeUtc
 """);
             // DateTimeOffset
             context.AddSource($"{Namespace}.DbParamDateTimeOffset.cs", $$"""
+using System;
 using Npgsql;
 namespace {{Namespace}};
 public class DbParamNullableDateTimeOffset

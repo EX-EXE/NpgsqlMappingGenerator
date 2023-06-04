@@ -134,6 +134,10 @@ internal sealed class {{CommonDefine.DbViewCrossJoinAttributeName}}<JoinTableCla
 
 using System;
 using System.Text;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Npgsql;
 using {{CommonDefine.Namespace}};
