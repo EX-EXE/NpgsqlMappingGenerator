@@ -47,6 +47,7 @@ public class DateTimeTest : PrepareDataBase, IAsyncLifetime
             OutputHelper.WriteLine($"Select DateTime:{row.DateTime}({row.DateTime.Kind})");
             OutputHelper.WriteLine($"Select DateTimeUtc:{row.DateTimeUtc}({row.DateTimeUtc.Kind})");
             OutputHelper.WriteLine($"Select DateTimeOffset:{row.DateTimeOffset}");
+            OutputHelper.WriteLine($"Select DateTimeOffset:{row.DateTimeOffset.ToLocalTime()}");
             row.DateTime.Should().Be(dateTime);
             row.DateTimeUtc.Should().Be(dateTimeUtc);
             row.DateTimeOffset.Should().Be(dateTimeOffset);

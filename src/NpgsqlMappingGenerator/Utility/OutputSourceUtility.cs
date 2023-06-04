@@ -99,7 +99,7 @@ namespace NpgsqlMappingGenerator.Utility
 
         public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string joinQuery)
             => $$"""
-    public static async IAsyncEnumerable<{{className}}> SelectAsync(
+    private static async IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
         DbColumnType distinctColumns = DbColumnType.None,
         DbQueryType selectColumns = DbQueryType.None,
@@ -174,6 +174,28 @@ namespace NpgsqlMappingGenerator.Utility
 {{dbQueries.ForEachLines(x => $"selectColumns.HasFlag(DbQueryType.{x.PropertyName})".OutputIfStatement($"result.{x.PropertyName} = {x.ConverterType}.ReadData(reader ,readerOrdinal++);").OutputLine(3)).OutputLine()}}
             yield return result;
         }
+    }
+    public static IAsyncEnumerable<{{className}}> SelectDistinctAsync(
+        NpgsqlConnection connection,
+        DbColumnType distinctColumns,
+        DbQueryType selectColumns = DbQueryType.None,
+        IDbCondition? where = null,
+        IDbCondition? having = null,
+        IDbOrder? order = null,
+        long limit = 0,
+        long offset = 0,
+        CancellationToken cancellationToken = default)
+    {
+        return SelectAsync(
+            connection,
+            distinctColumns,
+            selectColumns,
+            where,
+            having,
+            order,
+            limit,
+            offset,
+            cancellationToken);
     }
 
     public static IAsyncEnumerable<{{className}}> SelectAsync(
