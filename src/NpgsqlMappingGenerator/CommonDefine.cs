@@ -156,7 +156,7 @@ public enum DbCompareOperator
     /// ILIKE(Pattern Matching)
     /// Case Insensitive
     /// </summary>
-    ILIKE,
+    ILike,
     /// <summary>
     /// NotILIKE(Pattern Matching)
     /// Case Insensitive
