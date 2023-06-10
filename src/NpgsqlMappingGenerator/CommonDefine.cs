@@ -143,12 +143,25 @@ public enum DbCompareOperator
 
     /// <summary>
     /// LIKE(Pattern Matching)
+    /// Case Sensitive
     /// </summary>
     Like,
     /// <summary>
     /// NotLIKE(Pattern Matching)
+    /// Case Sensitive
     /// </summary>
     NotLike,
+
+    /// <summary>
+    /// ILIKE(Pattern Matching)
+    /// Case Insensitive
+    /// </summary>
+    ILIKE,
+    /// <summary>
+    /// NotILIKE(Pattern Matching)
+    /// Case Insensitive
+    /// </summary>
+    NotILike,
     
     /// <summary>
     /// Match Regex(POSIX Regular Expression)
@@ -185,6 +198,9 @@ public static class DbCompareOperatorExtensins
 
             DbCompareOperator.Like => "LIKE",
             DbCompareOperator.NotLike => "NOT LIKE",
+
+            DbCompareOperator.ILike => "ILIKE",
+            DbCompareOperator.NotILike => "NOT ILIKE",
 
             DbCompareOperator.MatchRegexSensitive => "~",
             DbCompareOperator.MatchRegexInsensitive => "~*",
