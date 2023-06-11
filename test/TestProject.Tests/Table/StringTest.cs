@@ -55,6 +55,49 @@ public class StringTest : PrepareDataBase, IAsyncLifetime
         }
         hit.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task LikeTest3()
+    {
+        bool hit = false;
+        await foreach (var row in StringTable.SelectAsync(
+            Connection,
+            StringTable.DbQueryType.All,
+            where: new StringTable.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.Like, new StringTable.DbParamData("____Data"))))
+        {
+            hit |= true;
+        }
+        hit.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LikeTest4()
+    {
+        bool hit = false;
+        await foreach (var row in StringTable.SelectAsync(
+            Connection,
+            StringTable.DbQueryType.All,
+            where: new StringTable.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.Like, new StringTable.DbParamData("%Data"))))
+        {
+            hit |= true;
+        }
+        hit.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LikeTest5()
+    {
+        bool hit = false;
+        await foreach (var row in StringTable.SelectAsync(
+            Connection,
+            StringTable.DbQueryType.All,
+            where: new StringTable.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.Like, new StringTable.DbParamData("%stDa%"))))
+        {
+            hit |= true;
+        }
+        hit.Should().BeTrue();
+    }
+
     [Fact]
     public async Task ILikeTest()
     {
