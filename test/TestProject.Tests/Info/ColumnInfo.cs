@@ -30,6 +30,18 @@ public class ColumnInfo : PrepareDataBase, IAsyncLifetime
     }
 
     [Fact]
+    public async Task FetchTableColumnNamesAsyncTest()
+    {
+        bool hit = false;
+        await foreach(var name in TableTest.FetchTableColumnNamesAsync(Connection).ConfigureAwait(false))
+        {
+            OutputHelper.WriteLine(name);
+            hit |= true;
+        }
+        hit.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task NoMissingTest()
     {
         Func<Task> func = async () => await TableTest.CheckTableColumnsAsync(Connection);
