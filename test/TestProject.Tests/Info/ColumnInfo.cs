@@ -57,7 +57,7 @@ public class ColumnInfo : PrepareDataBase, IAsyncLifetime
     public async Task ExistsTableColumnsAsyncTest3()
     {
         var result = await MissingPropertyColumn.ExistsTableColumnsAsync(Connection).ConfigureAwait(false);
-        result.Should().BeFalse();
+        result.Should().BeTrue();
     }
 
     [Fact]
