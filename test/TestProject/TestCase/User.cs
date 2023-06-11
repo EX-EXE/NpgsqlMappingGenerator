@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using NpgsqlMappingGenerator;
-namespace TestProject;
+
+namespace TestProject.TestCase;
 
 [DbTableGenerator("public.userdata")]
 public partial class UserData

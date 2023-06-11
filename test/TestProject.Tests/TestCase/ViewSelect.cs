@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TestProject.Tests;
-using TestProject;
 using Xunit.Abstractions;
 using FluentAssertions;
+using TestProject.TestCase;
 
-namespace TestProject.Tests;
+namespace TestProject.Tests.TestCase;
 
 public class ViewSelect : PrepareDataBase, IAsyncLifetime
 {

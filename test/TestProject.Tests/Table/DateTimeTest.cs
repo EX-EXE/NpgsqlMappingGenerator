@@ -3,7 +3,7 @@ using System;
 using Xunit.Abstractions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace TestProject.Tests;
+namespace TestProject.Tests.Table;
 
 public class DateTimeTest : PrepareDataBase, IAsyncLifetime
 {

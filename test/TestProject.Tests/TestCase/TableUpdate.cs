@@ -1,7 +1,8 @@
 using FluentAssertions;
+using TestProject.TestCase;
 using Xunit.Abstractions;
 
-namespace TestProject.Tests;
+namespace TestProject.Tests.TestCase;
 
 public class TableUpdate : PrepareDataBase, IAsyncLifetime
 {
@@ -44,7 +45,7 @@ public class TableUpdate : PrepareDataBase, IAsyncLifetime
             var newLast = $"Update{value}";
             InsertUserData[newFirst] = newLast;
             var num = await UserData.UpdateAsync(
-                Connection, 
+                Connection,
                 new UserData.IDbParam[]
                 {
                     new UserData.DbParamFirstName(newFirst),

@@ -12,7 +12,7 @@ namespace NpgsqlMappingGenerator.Utility
             var schemaSplitIndex = dbTable.DbTableQuery.IndexOf('.');
             var schema = string.Empty;
             var table = string.Empty;
-            if(0 <= schemaSplitIndex)
+            if (0 <= schemaSplitIndex)
             {
                 schema = dbTable.DbTableQuery.Substring(0, schemaSplitIndex);
                 table = dbTable.DbTableQuery.Substring(schemaSplitIndex + 1);
@@ -44,8 +44,77 @@ namespace NpgsqlMappingGenerator.Utility
             sqlBuilder.Append($" AND table_schema = '{DbSchemaName}'");
         }
         await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         return reader != null && reader.HasRows;
+    }
+
+    public static async ValueTask<bool> ExistsTableColumnsAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var dbColumnNameList = new List<string>();
+        await foreach(var columnName in FetchTableColumnNamesAsync(connection, cancellationToken).ConfigureAwait(false))
+        {
+            dbColumnNameList.Add(columnName);
+        }
+        foreach(var dbColumnType in DbColumnTypes)
+        {
+            var propertyColumnName = GetDbQuery((DbQueryType)dbColumnType);
+            if(!dbColumnNameList.Contains(propertyColumnName))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static async ValueTask CheckTableColumnsAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var dbColumnNameList = new List<string>();
+        var propertyColumnNameList = new List<string>();
+        await foreach(var columnName in FetchTableColumnNamesAsync(connection, cancellationToken).ConfigureAwait(false))
+        {
+            dbColumnNameList.Add(columnName);
+        }
+        foreach(var dbColumnType in DbColumnTypes)
+        {
+            var propertyColumnName = GetDbQuery((DbQueryType)dbColumnType);
+            propertyColumnNameList.Add(propertyColumnName);
+        }
+
+        var missingDbColumnNames = propertyColumnNameList.Except(dbColumnNameList).ToArray();
+        var missingPropertyColumnNames = dbColumnNameList.Except(propertyColumnNameList).ToArray();
+        if(0 < missingDbColumnNames.Length || 0 < missingPropertyColumnNames.Length)
+        {
+            throw new InvalidOperationException($"Missing DbColumn:{System.Environment.NewLine}{string.Join(System.Environment.NewLine, missingDbColumnNames)}{System.Environment.NewLine}Missing PropertyColumn:{System.Environment.NewLine}{string.Join(System.Environment.NewLine, missingPropertyColumnNames)}");
+        }
+    }
+
+    public static async IAsyncEnumerable<string> FetchTableColumnNamesAsync(
+        NpgsqlConnection connection,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if(string.IsNullOrEmpty(DbTableName))
+        {
+            throw new InvalidOperationException($"{nameof(DbTableName)} is empty.");
+        }
+
+        var sqlBuilder = new StringBuilder($"SELECT column_name FROM information_schema.columns WHERE table_name = '{DbTableName}'");
+        if(!string.IsNullOrEmpty(DbSchemaName))
+        {
+            sqlBuilder.Append($" AND table_schema = '{DbSchemaName}'");
+        }
+        await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            yield return NpgsqlMappingGenerator.DbParamString.ReadData(reader, 0);
+        }
     }
 """;
         }

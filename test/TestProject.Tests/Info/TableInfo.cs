@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TestProject.TestCase;
 using Xunit.Abstractions;
 
-namespace TestProject.Tests;
+namespace TestProject.Tests.Info;
 
 public class TableInfo : PrepareDataBase, IAsyncLifetime
 {
@@ -36,7 +37,7 @@ public class TableInfo : PrepareDataBase, IAsyncLifetime
     [Fact]
     public async Task NotExistsTable()
     {
-        var exists = await NotCreateTable.ExistsTableAsync(Connection).ConfigureAwait(false);
+        var exists = await TableTest.ExistsTableAsync(Connection).ConfigureAwait(false);
         exists.Should().Be(false);
     }
 }

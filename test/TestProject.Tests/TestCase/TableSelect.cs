@@ -1,7 +1,8 @@
 using FluentAssertions;
+using TestProject.TestCase;
 using Xunit.Abstractions;
 
-namespace TestProject.Tests;
+namespace TestProject.Tests.TestCase;
 
 public class TableSelect : PrepareDataBase, IAsyncLifetime
 {
