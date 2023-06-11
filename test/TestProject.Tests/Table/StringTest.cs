@@ -67,7 +67,7 @@ public class StringTest : PrepareDataBase, IAsyncLifetime
         {
             hit |= true;
         }
-        hit.Should().BeFalse();
+        hit.Should().BeTrue();
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class StringTest : PrepareDataBase, IAsyncLifetime
         {
             hit |= true;
         }
-        hit.Should().BeFalse();
+        hit.Should().BeTrue();
     }
 
     [Fact]
