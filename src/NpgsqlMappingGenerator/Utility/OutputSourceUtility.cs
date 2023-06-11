@@ -41,7 +41,7 @@ namespace NpgsqlMappingGenerator.Utility
         var sqlBuilder = new StringBuilder($"SELECT * FROM information_schema.tables WHERE table_name = '{DbTableName}'");
         if(!string.IsNullOrEmpty(DbSchemaName))
         {
-            sqlBuilder.Append($" AND schema_name = '{DbSchemaName}'");
+            sqlBuilder.Append($" AND table_schema = '{DbSchemaName}'");
         }
         await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
