@@ -11,7 +11,7 @@ public partial class StringTable
     [DbAutoCreate<DbAutoCreateGuid>(DbAutoCreateType.Insert)]
     public Guid Id { get; set; }
 
-    [DbColumn<DbParamDateTime>("data")]
+    [DbColumn<DbParamString>("data")]
     public string Data { get; set; } = string.Empty;
 
     public static async ValueTask CreateTableAsync(NpgsqlConnection connection)
