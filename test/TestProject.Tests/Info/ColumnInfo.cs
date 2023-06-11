@@ -42,6 +42,25 @@ public class ColumnInfo : PrepareDataBase, IAsyncLifetime
     }
 
     [Fact]
+    public async Task ExistsTableColumnsAsyncTest()
+    {
+        var result = await TableTest.ExistsTableColumnsAsync(Connection).ConfigureAwait(false);
+        result.Should().BeTrue();
+    }
+    [Fact]
+    public async Task ExistsTableColumnsAsyncTest2()
+    {
+        var result = await MissingDbColumn.ExistsTableColumnsAsync(Connection).ConfigureAwait(false);
+        result.Should().BeFalse();
+    }
+    [Fact]
+    public async Task ExistsTableColumnsAsyncTest3()
+    {
+        var result = await MissingPropertyColumn.ExistsTableColumnsAsync(Connection).ConfigureAwait(false);
+        result.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task NoMissingTest()
     {
         Func<Task> func = async () => await TableTest.CheckTableColumnsAsync(Connection);
