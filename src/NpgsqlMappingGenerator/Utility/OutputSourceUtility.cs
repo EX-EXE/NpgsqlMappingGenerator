@@ -8,9 +8,48 @@ namespace NpgsqlMappingGenerator.Utility
     internal static class OutputSourceUtility
     {
         public static string CreateDbTableProperty(AnalyzeDbTable dbTable)
-            => $$"""
-    public static readonly string DbTableName = "{{dbTable.DbTableName}}";
+        {
+            var schemaSplitIndex = dbTable.DbTableQuery.IndexOf('.');
+            var schema = string.Empty;
+            var table = string.Empty;
+            if(0 <= schemaSplitIndex)
+            {
+                schema = dbTable.DbTableQuery.Substring(0, schemaSplitIndex);
+                table = dbTable.DbTableQuery.Substring(schemaSplitIndex + 1);
+            }
+            else
+            {
+                schema = string.Empty;
+                table = dbTable.DbTableQuery;
+            }
+
+            return $$"""
+    public static readonly string DbSchemaName = "{{schema}}";
+    public static readonly string DbTableName = "{{table}}";
+    public static readonly string DbTableQuery = "{{dbTable.DbTableQuery}}";
+
+    public static async ValueTask<bool> ExistsTableAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if(string.IsNullOrEmpty(DbTableName))
+        {
+            throw new InvalidOperationException($"{nameof(DbTableName)} is empty.");
+        }
+
+        var sqlBuilder = new StringBuilder($"SELECT * FROM information_schema.tables WHERE table_name = '{DbTableName}'");
+        if(!string.IsNullOrEmpty(DbSchemaName))
+        {
+            sqlBuilder.Append($" AND schema_name = '{DbSchemaName}'");
+        }
+        await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return reader != null && reader.HasRows;
+    }
 """;
+        }
+
         public static string CreateColumnProperty(AnalyzeDbColumn[] dbColumns)
         {
             return dbColumns.ForEachIndexLines((i, x) => $$"""public {{x.PropertyType}} {{x.PropertyName}} { get; set; } {{(string.IsNullOrEmpty(x.PropertyDefaultValue) ? string.Empty : $" = {x.PropertyDefaultValue};")}}""").OutputLine(1);
@@ -72,7 +111,7 @@ namespace NpgsqlMappingGenerator.Utility
     public class DbParam{{dbColumn.PropertyName}} : IDbParam
     {
         public DbQueryType QueryType => DbQueryType.{{dbColumn.PropertyName}};
-        public string DbTable => DbTableName;
+        public string DbTable => DbTableQuery;
         public string DbQuery => GetDbQuery(QueryType);
         public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
@@ -137,7 +176,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             sqlBuilder.Append($" {string.Join(",", selectQueries)}");
         }
-        sqlBuilder.Append($" FROM {DbTableName} {{joinQuery}}");
+        sqlBuilder.Append($" FROM {DbTableQuery} {{joinQuery}}");
         int conditionOrdinal = 0;
         if (where != null)
         {

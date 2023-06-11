@@ -61,7 +61,7 @@ namespace NpgsqlMappingGenerator.Utility
                         if (joinTable.DbColumns.TryGetValue(joinColumnName, out var joinColumn) &&
                             compTable.DbColumns.TryGetValue(compColumnName, out var compColumn))
                         {
-                            joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableName} ON {joinTable.DbTableName}.{joinColumn.DbColumnName} = {compTable.DbTableName}.{compColumn.DbColumnName}");
+                            joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableQuery} ON {joinTable.DbTableQuery}.{joinColumn.DbColumnName} = {compTable.DbTableQuery}.{compColumn.DbColumnName}");
                         }
                     }
                 }
@@ -71,7 +71,7 @@ namespace NpgsqlMappingGenerator.Utility
                     if (tableType != default &&
                          dbTables.TryGetValue(tableType.FullNameWithGenerics, out var joinTable))
                     {
-                        joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableName}");
+                        joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableQuery}");
                     }
                 }
             }
@@ -150,7 +150,7 @@ namespace NpgsqlMappingGenerator.Utility
     internal class AnalyzeDbTable
     {
         public AnalyzeClassInfo ClassInfo { get; init; }
-        public string DbTableName { get; private set; } = string.Empty;
+        public string DbTableQuery { get; private set; } = string.Empty;
         public Dictionary<string, AnalyzeDbColumn> DbColumns { get; private set; } = new Dictionary<string, AnalyzeDbColumn>();
 
         public AnalyzeDbTable(AnalyzeClassInfo classInfo)
@@ -163,13 +163,13 @@ namespace NpgsqlMappingGenerator.Utility
             cancellationToken.ThrowIfCancellationRequested();
             var result = new AnalyzeDbTable(analyzeClassInfo);
             {
-                // DbTableName
+                // DbTableQuery
                 var dbTableAttribute = analyzeClassInfo.Attributes.FirstOrDefault(x => x.Type.FullName == CommonDefine.DbTableAttributeFullName);
                 if (dbTableAttribute != default &&
                     0 < dbTableAttribute.ArgumentObjects.Length &&
                     dbTableAttribute.ArgumentObjects[0] is string dbTableString)
                 {
-                    result.DbTableName = dbTableString;
+                    result.DbTableQuery = dbTableString;
                 }
                 // DbColumn
                 foreach (var analyzePropertyInfo in analyzeClassInfo.Properties)

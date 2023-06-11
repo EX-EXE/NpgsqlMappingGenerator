@@ -123,7 +123,7 @@ partial class {{{classInfo.Type.ShortName}}}
             parameterNames.Add(paramName);
             parameters.Add(dbParam.CreateParameter(paramName));
         }
-        var sqlBuilder = new StringBuilder($"INSERT INTO {DbTableName}");
+        var sqlBuilder = new StringBuilder($"INSERT INTO {DbTableQuery}");
         sqlBuilder.Append($" ({string.Join(",",columnNames)})");
         sqlBuilder.Append($" VALUES ({string.Join(",",parameterNames)})");
 
@@ -158,7 +158,7 @@ partial class {{{classInfo.Type.ShortName}}}
             parameters.Add(dbParam.CreateParameter(paramName));
         }
 
-        var sqlBuilder = new StringBuilder($"UPDATE {DbTableName} SET {string.Join(",",sets)}");
+        var sqlBuilder = new StringBuilder($"UPDATE {DbTableQuery} SET {string.Join(",",sets)}");
         if (where != null)
         {
             sqlBuilder.Append($" WHERE {where.CreateQueryAndParameter(ref parameters, ref ordinal)}");
@@ -180,7 +180,7 @@ partial class {{{classInfo.Type.ShortName}}}
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var sqlBuilder = new StringBuilder($"DELETE FROM {DbTableName}");
+        var sqlBuilder = new StringBuilder($"DELETE FROM {DbTableQuery}");
         int conditionOrdinal = 0;
         var parameters = new List<NpgsqlParameter>();
         if (where != null)
@@ -239,7 +239,7 @@ partial class {{{classInfo.Type.ShortName}}}
             parameters.Add(updateParameter.CreateParameter(updateParameterName));
         }
 
-        var sql = $"INSERT INTO {DbTableName} ({string.Join(",",insertColumnNames)}) VALUES ({string.Join(",",insertParameterNames)}) ON CONFLICT ({string.Join(",",conflictColumnQueries)}) DO UPDATE SET {string.Join(",",updateParameterQueries)}";
+        var sql = $"INSERT INTO {DbTableQuery} ({string.Join(",",insertColumnNames)}) VALUES ({string.Join(",",insertParameterNames)}) ON CONFLICT ({string.Join(",",conflictColumnQueries)}) DO UPDATE SET {string.Join(",",updateParameterQueries)}";
         await using var command = new NpgsqlCommand(sql, connection);
         foreach (var parameter in parameters)
         {
@@ -308,7 +308,7 @@ partial class {{{classInfo.Type.ShortName}}}
             parameters.Add(updateParam.CreateParameter(paramName));
         }
 
-        var sqlBuilder = new StringBuilder($"UPDATE {DbTableName} SET {string.Join(",",updateQueryList)}");
+        var sqlBuilder = new StringBuilder($"UPDATE {DbTableQuery} SET {string.Join(",",updateQueryList)}");
         if (where != null)
         {
             sqlBuilder.Append($" WHERE {where.CreateQueryAndParameter(ref parameters, ref ordinal)}");

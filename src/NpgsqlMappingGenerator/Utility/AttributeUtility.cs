@@ -9,12 +9,12 @@ using System.Reflection;
 
 namespace NpgsqlMappingGenerator.Utility
 {
-    internal record class DbTableJoinInfo(string DbTableName, string DbColumnName);
+    internal record class DbTableJoinInfo(string DbTableQuery, string DbColumnName);
     internal record DbColumnInfo(string PropertyType, string PropertyName, string Query, string ConverterType);
     internal record DbAutoCreateInfo(string PropertyName, string InsertFunc, string UpdateFunc);
     internal static class AttributeUtility
     {
-        public static DbColumnInfo? GetDbColumnInfo(this AnalyzePropertyInfo analyzePropertyInfo, string dbTableName = "")
+        public static DbColumnInfo? GetDbColumnInfo(this AnalyzePropertyInfo analyzePropertyInfo, string dbTableQuery = "")
         {
             var columnAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbColumnAttributeName}");
             if (columnAttribute != default)
@@ -22,7 +22,7 @@ namespace NpgsqlMappingGenerator.Utility
                 var propertyType = analyzePropertyInfo.Type.FullNameWithGenerics;
                 var propertyName = analyzePropertyInfo.Name;
                 var columnName = columnAttribute.ArgumentObjects.OfType<string>().First();
-                var columnFullName = string.IsNullOrEmpty(dbTableName) ? columnName : $"{dbTableName}.{columnName}";
+                var columnFullName = string.IsNullOrEmpty(dbTableQuery) ? columnName : $"{dbTableQuery}.{columnName}";
                 var converterType = columnAttribute.GenericTypes.First().FullNameWithGenerics;
                 return new DbColumnInfo(propertyType, propertyName, columnFullName, converterType);
             }
@@ -91,7 +91,7 @@ namespace NpgsqlMappingGenerator.Utility
             return Array.Empty<DbColumnInfo>();
         }
 
-        public static string GetDbTableName(this AnalyzeClassInfo analyzeClassInfo)
+        public static string GetDbTableQuery(this AnalyzeClassInfo analyzeClassInfo)
         {
             var dbTableAttribute = analyzeClassInfo.Attributes.First(x => x.Type.FullName == $"{CommonDefine.Namespace}.{CommonDefine.DbTableAttributeName}");
             return dbTableAttribute.ArgumentObjects.OfType<string>().First();
@@ -102,7 +102,7 @@ namespace NpgsqlMappingGenerator.Utility
             var viewTableType = viewTableAttribute.GenericTypes.First();
             if (cacheClassInfoDict.TryGetValue(viewTableType.FullNameWithGenerics, out var classInfo))
             {
-                return classInfo.GetDbTableName();
+                return classInfo.GetDbTableQuery();
             }
             throw new InvalidOperationException();
 
@@ -125,24 +125,24 @@ namespace NpgsqlMappingGenerator.Utility
                     {
                         throw new InvalidOperationException();
                     }
-                    var query = $"{attribute.GetDbTableJoinPrefixQuery()} {joins[0].DbTableName} ON {joins[0].DbTableName}.{joins[0].DbColumnName} = {joins[1].DbTableName}.{joins[1].DbColumnName}";
+                    var query = $"{attribute.GetDbTableJoinPrefixQuery()} {joins[0].DbTableQuery} ON {joins[0].DbTableQuery}.{joins[0].DbColumnName} = {joins[1].DbTableQuery}.{joins[1].DbColumnName}";
                     result.Add(query);
                 }
                 else if (CommonDefine.DbViewCrossJoinAttributeFullName == attribute.Type.FullName)
                 {
-                    var query = $"{attribute.GetDbTableJoinPrefixQuery()} {attribute.GetDbTableNameFromCrossJoinAttribute(cacheClassInfoDict)}";
+                    var query = $"{attribute.GetDbTableJoinPrefixQuery()} {attribute.GetDbTableQueryFromCrossJoinAttribute(cacheClassInfoDict)}";
                     result.Add(query);
                 }
             }
             return string.Join(" ", result);
         }
 
-        public static string GetDbTableNameFromCrossJoinAttribute(this AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
+        public static string GetDbTableQueryFromCrossJoinAttribute(this AnalyzeAttributeInfo analyzeAttributeInfo, Dictionary<string, AnalyzeClassInfo> cacheClassInfoDict)
         {
             if (0 < analyzeAttributeInfo.GenericTypes.Length &&
                 cacheClassInfoDict.TryGetValue(analyzeAttributeInfo.GenericTypes[0].FullNameWithGenerics, out var analyzeClassInfo))
             {
-                return analyzeClassInfo.GetDbTableName();
+                return analyzeClassInfo.GetDbTableQuery();
             }
             throw new InvalidOperationException();
         }
@@ -156,7 +156,7 @@ namespace NpgsqlMappingGenerator.Utility
                 if (argObj is string argStr && cacheClassInfoDict.TryGetValue(genericType.FullNameWithGenerics, out var analyzeClassInfo))
                 {
                     var property = analyzeClassInfo.Properties.Where(x => x.Name == argStr).First();
-                    var table = analyzeClassInfo.GetDbTableName();
+                    var table = analyzeClassInfo.GetDbTableQuery();
                     var column = property.GetDbColumnName();
                     result.Add(new DbTableJoinInfo(table, column));
                 }
