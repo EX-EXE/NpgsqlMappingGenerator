@@ -15,9 +15,9 @@ public class TableInfo : PrepareDataBase, IAsyncLifetime
     {
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        return Task.CompletedTask;
+        await UserData.CreateTableAsync(Connection).ConfigureAwait(false);
     }
 
 
