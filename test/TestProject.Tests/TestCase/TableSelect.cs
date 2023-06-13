@@ -1,6 +1,7 @@
 using FluentAssertions;
 using TestProject.TestCase;
 using Xunit.Abstractions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TestProject.Tests.TestCase;
 
@@ -195,5 +196,29 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
                 order: new Product.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, Product.DbQueryType.LastUpdate)).ToArrayAsync();
             selectResult.Length.Should().Be(InsertProductData.Where(x => x.Item2 >= data.Item2).Count());
         }
+    }
+
+    [Fact]
+    public async Task SelectConditions()
+    {
+        Func<Task> func = async () =>
+        {
+            await Product.SelectAsync(
+            Connection,
+            Product.DbQueryType.Name,
+            new Product.DbConditions
+            (
+                NpgsqlMappingGenerator.DbLogicOperator.Or,
+                Array.Empty<Product.IDbCondition>()
+            ),
+            order: new Product.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, Product.DbQueryType.LastUpdate)).ToArrayAsync();
+
+        };
+        await func.Should().NotThrowAsync<InvalidOperationException>();
+
+
+
+        var selectResult = 
+        selectResult.Length.Should().BeGreaterThan(0);
     }
 }
