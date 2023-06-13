@@ -209,13 +209,13 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
             NpgsqlMappingGenerator.DbLogicOperator.Or,
             new Product.DbConditions
             (
-                NpgsqlMappingGenerator.DbLogicOperator.Or,
+                NpgsqlMappingGenerator.DbLogicOperator.And,
                 new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.GreaterThanEqual, new Product.DbParamPrice(100)),
                 new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.LessThanEqual, new Product.DbParamPrice(300))
             ),
             new Product.DbConditions
             (
-                NpgsqlMappingGenerator.DbLogicOperator.Or,
+                NpgsqlMappingGenerator.DbLogicOperator.And,
                 new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.GreaterThanEqual, new Product.DbParamPrice(600)),
                 new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.LessThanEqual, new Product.DbParamPrice(800))
             )
@@ -225,6 +225,7 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
         {
             OutputHelper.WriteLine($"Price : {select.Price}");
         }
+        selects.Select(x => x.Price).Should().Equal(100, 200, 300, 600, 700, 800);
     }
 
     [Fact]
