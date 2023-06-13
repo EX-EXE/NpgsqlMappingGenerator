@@ -201,7 +201,7 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
     [Fact]
     public async Task SelectConditions()
     {
-        Func<Task> func = async () =>
+        //Func<Task> func = async () =>
         {
             await Product.SelectAsync(
             Connection,
@@ -213,6 +213,6 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
             ),
             order: new Product.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, Product.DbQueryType.LastUpdate)).ToArrayAsync();
         };
-        await func.Should().NotThrowAsync<ArgumentException>();
+        //await func.Should().NotThrowAsync<ArgumentException>();
     }
 }
