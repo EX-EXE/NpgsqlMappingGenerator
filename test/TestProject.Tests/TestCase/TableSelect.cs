@@ -212,13 +212,7 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
                 Array.Empty<Product.IDbCondition>()
             ),
             order: new Product.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, Product.DbQueryType.LastUpdate)).ToArrayAsync();
-
         };
-        await func.Should().NotThrowAsync<InvalidOperationException>();
-
-
-
-        var selectResult = 
-        selectResult.Length.Should().BeGreaterThan(0);
+        await func.Should().NotThrowAsync<ArgumentException>();
     }
 }
