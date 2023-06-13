@@ -203,7 +203,7 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
     {
         var selects = await Product.SelectAsync(
         Connection,
-        Product.DbQueryType.Name,
+        Product.DbQueryType.Price,
         new Product.DbConditions
         (
             NpgsqlMappingGenerator.DbLogicOperator.Or,
