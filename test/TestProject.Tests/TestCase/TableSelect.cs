@@ -201,6 +201,35 @@ public class TableSelect : PrepareDataBase, IAsyncLifetime
     [Fact]
     public async Task SelectConditions()
     {
+        var selects = await Product.SelectAsync(
+        Connection,
+        Product.DbQueryType.Name,
+        new Product.DbConditions
+        (
+            NpgsqlMappingGenerator.DbLogicOperator.Or,
+            new Product.DbConditions
+            (
+                NpgsqlMappingGenerator.DbLogicOperator.Or,
+                new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.GreaterThanEqual, new Product.DbParamPrice(100)),
+                new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.LessThanEqual, new Product.DbParamPrice(300))
+            ),
+            new Product.DbConditions
+            (
+                NpgsqlMappingGenerator.DbLogicOperator.Or,
+                new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.GreaterThanEqual, new Product.DbParamPrice(600)),
+                new Product.DbCondition(NpgsqlMappingGenerator.DbCompareOperator.LessThanEqual, new Product.DbParamPrice(800))
+            )
+        ),
+        order: new Product.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, Product.DbQueryType.LastUpdate)).ToArrayAsync();
+        foreach (var select in selects)
+        {
+            OutputHelper.WriteLine($"Price : {select.Price}");
+        }
+    }
+
+    [Fact]
+    public async Task SelectConditions2()
+    {
         Func<Task> func = async () =>
         {
             await Product.SelectAsync(
