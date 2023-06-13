@@ -356,6 +356,10 @@ namespace NpgsqlMappingGenerator.Utility
         public string CreateQueryAndParameter(ref List<NpgsqlParameter> parameterList, ref int ordinal)
         {
             var conditionArray = Conditions.ToArray();
+            if(conditionArray.Length <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(conditionArray)} is empty.");
+            }
             var queryList = new List<string>(conditionArray.Length);
             foreach (var condition in conditionArray)
             {
