@@ -72,4 +72,54 @@ public class TableUpsert : PrepareDataBase, IAsyncLifetime
             updateNames.Contains(row.LastName).Should().BeTrue();
         }
     }
+
+    [Fact]
+    public async Task UpsertTest2()
+    {
+        var count = 10;
+        var insertNames = new List<string>();
+        var firstName = nameof(UpsertTest);
+        // Insert
+        foreach (var num in Enumerable.Range(0, count))
+        {
+            var insertName = $"Insert{num}";
+            insertNames.Add(insertName);
+            await UserData.UpsertAsync(Connection,
+                UserData.DbColumnType.FirstName | UserData.DbColumnType.LastName,
+                new UserData.IDbParam[]
+                {
+                    new UserData.DbParamFirstName(firstName),
+                    new UserData.DbParamLastName(insertName),
+                }).ConfigureAwait(false);
+        }
+        // Update
+        var updateNames = new List<string>();
+        foreach (var num in Enumerable.Range(0, count))
+        {
+            var updateName = $"Update{num}";
+            updateNames.Add(updateName);
+            await UserData.UpsertAsync(Connection,
+            UserData.DbColumnType.FirstName | UserData.DbColumnType.LastName,
+            new UserData.IDbParam[]
+            {
+                new UserData.DbParamFirstName(firstName),
+                new UserData.DbParamLastName(insertNames[num]),
+            },
+            new UserData.IDbParam[]
+            {
+                new UserData.DbParamFirstName(firstName),
+                new UserData.DbParamLastName(updateName),
+            },
+            UserData.DbParamLastName.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals, insertNames[0]));
+        }
+
+        // Check
+        await foreach (var row in UserData.SelectAsync(
+            Connection,
+            UserData.DbQueryType.LastName,
+            UserData.DbParamFirstName.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals, nameof(UpsertTest))))
+        {
+            (updateNames[0] == row.LastName  || insertNames.Contains(row.LastName)).Should().BeTrue();
+        }
+    }
 }
