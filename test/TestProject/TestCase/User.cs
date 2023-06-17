@@ -22,7 +22,7 @@ public partial class UserData
 
     public static async ValueTask CreateTableAsync(NpgsqlConnection connection)
     {
-        using var cmd = new NpgsqlCommand("create table public.userdata (id uuid not null ,first_name text not null ,last_name text not null ,last_update timestamp(6) with time zone not null  ,primary key (id) );", connection);
+        using var cmd = new NpgsqlCommand("create table public.userdata (id uuid not null ,first_name text not null ,last_name text not null ,last_update timestamp(6) with time zone not null  ,primary key (id),UNIQUE (first_name,last_update) );", connection);
         await cmd.PrepareAsync().ConfigureAwait(false);
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
