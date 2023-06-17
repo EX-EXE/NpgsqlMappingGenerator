@@ -212,7 +212,7 @@ partial class {{{classInfo.Type.ShortName}}}
         var parameters = new List<NpgsqlParameter>();
         
         // Conflict
-        var conflictColumnQueries = DbColumnTypes.Where(x => x.HasFlag(conflictColumns)).Select(x =>GetDbQuery((DbQueryType)x)).ToArray();
+        var conflictColumnQueries = DbColumnTypes.Where(x => conflictColumns.HasFlag(x)).Select(x =>GetDbQuery((DbQueryType)x)).ToArray();
 
         // Insert
         var insertColumnNames = new List<string>();
