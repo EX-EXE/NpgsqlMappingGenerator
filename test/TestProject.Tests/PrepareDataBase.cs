@@ -34,7 +34,7 @@ namespace TestProject.Tests
 
             var connectionString = $"Host={host};Username={user};Password={pass};";
             var createDatabase = $"{prefixDataBaseName.ToLower()}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}";
-
+            outputHelper.WriteLine($"DB : {createDatabase}");
             // Create DataBase
             using var createDataSource = NpgsqlDataSource.Create($"{connectionString}DataBase={database};");
             using var createConnection = createDataSource.CreateConnection();

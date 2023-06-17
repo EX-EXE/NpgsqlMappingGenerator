@@ -385,7 +385,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             var paramName = $"@{Param.DbQuery}{ordinal++}";
             parameterList.Add(Param.CreateParameter(paramName));
-            return $"({Param.DbQuery} {Operator.ToQuery()} {paramName})";
+            return $"({Param.DbTable}.{Param.DbQuery} {Operator.ToQuery()} {paramName})";
         }
     }
 """;

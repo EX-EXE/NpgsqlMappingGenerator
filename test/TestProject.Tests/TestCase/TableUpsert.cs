@@ -119,7 +119,7 @@ public class TableUpsert : PrepareDataBase, IAsyncLifetime
             UserData.DbQueryType.LastName,
             UserData.DbParamFirstName.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals, nameof(UpsertTest))))
         {
-            (updateNames[0] == row.LastName  || insertNames.Contains(row.LastName)).Should().BeTrue();
+            (updateNames[0] == row.LastName || insertNames.Contains(row.LastName)).Should().BeTrue();
         }
     }
 }
