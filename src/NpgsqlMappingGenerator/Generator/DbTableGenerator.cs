@@ -202,6 +202,7 @@ partial class {{{classInfo.Type.ShortName}}}
         DbColumnType conflictColumns,
         IEnumerable<IDbParam> insertParams,
         IEnumerable<IDbParam> updateParams,
+        IDbCondition? updateWhere = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -239,8 +240,12 @@ partial class {{{classInfo.Type.ShortName}}}
             parameters.Add(updateParameter.CreateParameter(updateParameterName));
         }
 
-        var sql = $"INSERT INTO {DbTableQuery} ({string.Join(",",insertColumnNames)}) VALUES ({string.Join(",",insertParameterNames)}) ON CONFLICT ({string.Join(",",conflictColumnQueries)}) DO UPDATE SET {string.Join(",",updateParameterQueries)}";
-        await using var command = new NpgsqlCommand(sql, connection);
+        var sqlBuilder = new StringBuilder($"INSERT INTO {DbTableQuery} ({string.Join(",",insertColumnNames)}) VALUES ({string.Join(",",insertParameterNames)}) ON CONFLICT ({string.Join(",",conflictColumnQueries)}) DO UPDATE SET {string.Join(",",updateParameterQueries)}");
+        if (updateWhere != null)
+        {
+            sqlBuilder.Append($" WHERE {updateWhere.CreateQueryAndParameter(ref parameters, ref ordinal)}");
+        }
+        await using var command = new NpgsqlCommand(sqlBuilder.ToString(), connection);
         foreach (var parameter in parameters)
         {
             command.Parameters.Add(parameter);
@@ -253,6 +258,7 @@ partial class {{{classInfo.Type.ShortName}}}
         NpgsqlConnection connection,
         DbColumnType conflictColumns,
         IEnumerable<IDbParam> upsertParams,
+        IDbCondition? updateWhere = null,
         CancellationToken cancellationToken = default)
     {
         return UpsertAsync(
@@ -260,6 +266,7 @@ partial class {{{classInfo.Type.ShortName}}}
             conflictColumns,
             upsertParams,
             upsertParams,
+            updateWhere,
             cancellationToken);
     }
 
