@@ -1,10 +1,15 @@
-﻿using Npgsql;
+﻿using Microsoft.Extensions.Logging;
+using Npgsql;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace TestProject.Tests
 {
@@ -35,15 +40,22 @@ namespace TestProject.Tests
             var connectionString = $"Host={host};Username={user};Password={pass};";
             var createDatabase = $"{prefixDataBaseName.ToLower()}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}";
             outputHelper.WriteLine($"DB : {createDatabase}");
+
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(new TestLoggerProvider(OutputHelper)));
+
             // Create DataBase
-            using var createDataSource = NpgsqlDataSource.Create($"{connectionString}DataBase={database};");
+            var createDataSourceBuilder = new NpgsqlDataSourceBuilder($"{connectionString}DataBase={database};");
+            createDataSourceBuilder.UseLoggerFactory(loggerFactory);
+            using var createDataSource = createDataSourceBuilder.Build();
             using var createConnection = createDataSource.CreateConnection();
             createConnection.Open();
             using var cmd = new NpgsqlCommand($"CREATE DATABASE {createDatabase};", createConnection);
             var create = cmd.ExecuteNonQuery();
 
             // Connect Database
-            DataSource = NpgsqlDataSource.Create($"{connectionString}DataBase={createDatabase};");
+            var connectDataSourceBuilder = new NpgsqlDataSourceBuilder($"{connectionString}DataBase={createDatabase};");
+            connectDataSourceBuilder.UseLoggerFactory(loggerFactory);
+            DataSource = connectDataSourceBuilder.Build();
             Connection = DataSource.CreateConnection();
             Connection.Open();
         }
@@ -67,6 +79,70 @@ namespace TestProject.Tests
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+    }
+
+    internal class TestLoggerProvider : ILoggerProvider
+    {
+        private ITestOutputHelper outputHelper;
+
+        public TestLoggerProvider(ITestOutputHelper outputHelper)
+        {
+            this.outputHelper = outputHelper;
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new TestLogger(outputHelper, categoryName);
+        }
+
+        public void Dispose()
+        {
+        }
+    }
+
+
+    public class TestLogger : ILogger
+    {
+        private readonly ITestOutputHelper outputHelper;
+        private readonly string categoryName;
+
+        public TestLogger(ITestOutputHelper outputHelper, string categoryName)
+        {
+            this.outputHelper = outputHelper;
+            this.categoryName = categoryName;
+        }
+
+        public IDisposable BeginScope<TState>(TState state)
+        {
+            return NoneDisposable.Instance;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            outputHelper.WriteLine($"[{categoryName}][{eventId}] {formatter(state, exception)}");
+            if (exception != null)
+            {
+                outputHelper.WriteLine(exception.ToString());
+            }
+        }
+    }
+    class NoneDisposable : IDisposable
+    {
+        public static IDisposable Instance = new NoneDisposable();
+
+        NoneDisposable()
+        {
+
+        }
+
+        public void Dispose()
+        {
         }
     }
 }
