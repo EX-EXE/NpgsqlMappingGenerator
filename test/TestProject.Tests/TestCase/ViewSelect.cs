@@ -101,4 +101,19 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
             typeData.Name.Should().Be(row.AuthorityTypeName);
         }
     }
+
+    [Fact]
+    public async Task Select2()
+    {
+        foreach(var user in UserList)
+        {
+            await foreach (var row in ViewUser.SelectAsync(
+                Connection, 
+                ViewUser.DbQueryType.All,
+                where: ViewUser.DbParamUserDataId.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals,user.Id)))
+            {
+                user.Id.Should().Be(row.UserDataId);
+            }
+        }
+    }
 }
