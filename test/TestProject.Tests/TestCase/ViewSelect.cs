@@ -124,12 +124,12 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
         await foreach (var row in ViewUser.SelectAsync(
             Connection,
             ViewUser.DbQueryType.All,
-            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, ViewUser.DbQueryType.UserDataLastUpdate)))
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, ViewUser.DbQueryType.UserAuthorityLastUpdate)))
         {
-            dbList.Add(row.UserDataId);
+            dbList.Add(row.AuthorityTypeId);
         }
 
-        foreach (var (index, check) in UserList.OrderBy(x => x.LastUpdate).Select((x, i) => (i, x.Id)))
+        foreach (var (index, check) in UserAuthorityList.OrderBy(x => x.LastUpdate).Select((x, i) => (i, x.AuthorityTypeId)))
         {
             check.Should().Be(dbList[index]);
         }
@@ -142,12 +142,12 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
         await foreach (var row in ViewUser.SelectAsync(
             Connection,
             ViewUser.DbQueryType.All,
-            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Desc, ViewUser.DbQueryType.UserDataLastUpdate)))
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Desc, ViewUser.DbQueryType.UserAuthorityLastUpdate)))
         {
-            dbList.Add(row.UserDataId);
+            dbList.Add(row.AuthorityTypeId);
         }
 
-        foreach (var (index, check) in UserList.OrderByDescending(x => x.LastUpdate).Select((x, i) => (i, x.Id)))
+        foreach (var (index, check) in UserAuthorityList.OrderByDescending(x => x.LastUpdate).Select((x, i) => (i, x.AuthorityTypeId)))
         {
             check.Should().Be(dbList[index]);
         }
