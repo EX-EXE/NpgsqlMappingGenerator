@@ -70,6 +70,7 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
                 {
                     UserDataId = user.Id,
                     AuthorityTypeId = type.Id,
+                    LastUpdate = DateTime.Now,
                 };
                 UserAuthorityList.Add(userType);
 
