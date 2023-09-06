@@ -441,7 +441,7 @@ namespace NpgsqlMappingGenerator.Utility
             QueryType = queryType;
         }
         public string CreateQuery()
-            => $"{GetDbQuery(QueryType)} {Order.ToQuery()}";
+            => $"{GetDbFullQuery(QueryType)} {Order.ToQuery()}";
     }
 """;
     }
