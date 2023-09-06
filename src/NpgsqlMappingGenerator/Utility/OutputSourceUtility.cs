@@ -126,18 +126,27 @@ namespace NpgsqlMappingGenerator.Utility
 
         public static string CreateDbType(AnalyzeDbColumn[] dbColumns, AnalyzeDbColumn[] dbQueries, (string Key, string Value)[] AppendEnumValues)
         {
+            var maxNum = Math.Max(dbColumns.Length, dbQueries.Length);
+            var enumType = maxNum switch
+            {
+                int i when i <= 8 => "byte",
+                int i when i <= 16 => "ushort",
+                int i when i <= 32 => "uint",
+                _ => "ulong"
+            };
+
             return $$"""
     [Flags]
-    public enum DbQueryType
+    public enum DbQueryType : {{enumType}}
     {
-{{dbQueries.ForEachIndexLines((i, x) => $"{x.PropertyName} = 1 << {i},").OutputLine(2)}}
+{{dbQueries.ForEachIndexLines((i, x) => $"{x.PropertyName} = ({enumType})1 << {i},").OutputLine(2)}}
         None = 0,
         All = {{(0 < dbQueries.Length ? dbQueries.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
         AllColumns = {{(0 < dbColumns.Length ? dbColumns.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
 {{AppendEnumValues.ForEachLines(x => $"{x.Key} = {x.Value},").OutputLine(2)}}
     }
     [Flags]
-    public enum DbColumnType
+    public enum DbColumnType : {{enumType}}
     {
 {{dbColumns.ForEachIndexLines((i, x) => $"{x.PropertyName} = DbQueryType.{x.PropertyName},").OutputLine(2)}}
         None = 0,
