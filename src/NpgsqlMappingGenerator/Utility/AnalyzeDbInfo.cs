@@ -61,7 +61,7 @@ namespace NpgsqlMappingGenerator.Utility
                         if (joinTable.DbColumns.TryGetValue(joinColumnName, out var joinColumn) &&
                             compTable.DbColumns.TryGetValue(compColumnName, out var compColumn))
                         {
-                            joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableQuery} ON {joinColumn.DbColumnName} = {compColumn.DbColumnName}");
+                            joinQueryBuilder.Append($" {attribute.GetDbTableJoinPrefixQuery()} {joinTable.DbTableQuery} ON {joinTable.DbTableQuery}.{joinColumn.DbColumnName} = {compTable.DbTableQuery}.{compColumn.DbColumnName}");
                         }
                     }
                 }
@@ -222,7 +222,7 @@ namespace NpgsqlMappingGenerator.Utility
                     dbColumnAttribute.ArgumentObjects[0] is string dbColumnString)
                 {
                     result.ConverterType = dbColumnAttribute.GenericTypes[0].FullNameWithGenerics;
-                    result.DbColumnName = $"{dbTableInfo.DbTableQuery}.{dbColumnString}";
+                    result.DbColumnName = dbColumnString;
 
                     // Aggregate
                     var aggregateAttribute = analyzePropertyInfo.Attributes.FirstOrDefault(x => x.Type.FullName == CommonDefine.DbAggregateAttributeFullName);
