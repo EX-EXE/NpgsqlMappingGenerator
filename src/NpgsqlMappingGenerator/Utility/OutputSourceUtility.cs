@@ -239,11 +239,11 @@ namespace NpgsqlMappingGenerator.Utility
         {
             if (distinctQueryType.HasFlag(columnQueryTypes))
             {
-                distinctColumnQueries.Add(GetDbQuery(columnQueryTypes));
+                distinctColumnQueries.Add($"{{dbTable}}.{GetDbQuery(columnQueryTypes)}");
             }
             if (selectColumns.HasFlag(columnQueryTypes))
             {
-                selectQueries.Add(GetDbQuery(columnQueryTypes));
+                selectQueries.Add($"{{dbTable}}.{GetDbQuery(columnQueryTypes)}");
             }
         }
         if (0 < distinctColumnQueries.Count)
