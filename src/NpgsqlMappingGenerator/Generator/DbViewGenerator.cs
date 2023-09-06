@@ -114,7 +114,6 @@ internal sealed class {{CommonDefine.DbViewCrossJoinAttributeName}}<JoinTableCla
         var dbView = AnalyzeDbView.Analyze(classInfo, cancellationToken);
         foreach (var dbColumn in dbView.DbQueries)
         {
-            dbColumn.DbColumnName = $"{dbColumn.DbTableInfo.DbTableQuery}.{dbColumn.DbColumnName}";
             dbColumn.PropertyName = dbColumn.DbTableInfo.ClassInfo.Type.ShortName + dbColumn.PropertyName;
         }
         (string TableClassName, string[] PropertyNames)[] enumKeyValueList = dbView.DbColumns.GroupBy(x => x.DbTableInfo).Select(x => (x.Key.ClassInfo.Type.ShortName, x.Select(x => x.PropertyName).ToArray())).ToArray();
