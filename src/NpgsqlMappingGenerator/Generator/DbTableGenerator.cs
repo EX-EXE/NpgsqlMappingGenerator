@@ -93,14 +93,14 @@ partial class {{{classInfo.Type.ShortName}}}
 {{{OutputSourceUtility.CreateDbTableProperty(dbTable)}}}
 {{{OutputSourceUtility.CreateColumnProperty(dbAggregates)}}}
 
-{{{OutputSourceUtility.CreateDbType(dbColumns,dbQueries,Array.Empty<(string,string)>())}}}
+{{{OutputSourceUtility.CreateDbType(dbColumns, dbQueries, Array.Empty<(string, string)>())}}}
 
 {{{OutputSourceUtility.CreateDbParam(dbColumns)}}}
 
 {{{OutputSourceUtility.CreateDbCondition()}}}
 {{{OutputSourceUtility.CreateDbOrder()}}}
 
-{{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, string.Empty)}}}
+{{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, dbTable.DbTableQuery, string.Empty)}}}
 
     public static async ValueTask<int> InsertAsync(
         NpgsqlConnection connection,
