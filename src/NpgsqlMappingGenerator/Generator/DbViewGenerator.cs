@@ -146,7 +146,6 @@ using {{CommonDefine.Namespace}};
 
 partial class {{classInfo.Type.ShortName}}
 {
-{{OutputSourceUtility.CreateDbTableProperty(dbView.BaseTable)}}
 {{OutputSourceUtility.CreateColumnProperty(dbQueries)}}
 
 {{OutputSourceUtility.CreateDbType(dbColumns, dbQueries, enumKeyValueList.Select(x => ($"All{x.TableClassName}", x.PropertyNames.OutputLine("|"))).ToArray())}}
@@ -156,7 +155,7 @@ partial class {{classInfo.Type.ShortName}}
 {{OutputSourceUtility.CreateDbCondition()}}
 {{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, dbView.JoinQuery)}}
+{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, dbView.BaseTable.DbTableQuery, dbView.JoinQuery)}}
 
 }
 

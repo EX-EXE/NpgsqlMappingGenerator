@@ -189,7 +189,7 @@ namespace NpgsqlMappingGenerator.Utility
     public class DbParam{{dbColumn.PropertyName}} : IDbParam
     {
         public DbQueryType QueryType => DbQueryType.{{dbColumn.PropertyName}};
-        public string DbTable => DbTableQuery;
+        public string DbTable => "{{dbColumn.DbTableInfo.DbTableQuery}}";
         public string DbQuery => GetDbQuery(QueryType);
         public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
@@ -214,7 +214,7 @@ namespace NpgsqlMappingGenerator.Utility
             return dbParams.ToString();
         }
 
-        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string joinQuery)
+        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string dbTable, string joinQuery)
             => $$"""
     private static async IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
@@ -254,7 +254,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             sqlBuilder.Append($" {string.Join(",", selectQueries)}");
         }
-        sqlBuilder.Append($" FROM {DbTableQuery} {{joinQuery}}");
+        sqlBuilder.Append($" FROM {{dbTable}} {{joinQuery}}");
         int conditionOrdinal = 0;
         if (where != null)
         {
