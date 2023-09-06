@@ -175,6 +175,7 @@ namespace NpgsqlMappingGenerator.Utility
     public interface IDbParam
     {
         DbQueryType QueryType { get; }
+        string DbTable { get; }
         string DbQuery { get; }
         NpgsqlParameter CreateParameter(string paramName);
     }
@@ -188,6 +189,7 @@ namespace NpgsqlMappingGenerator.Utility
     public class DbParam{{dbColumn.PropertyName}} : IDbParam
     {
         public DbQueryType QueryType => DbQueryType.{{dbColumn.PropertyName}};
+        public string DbTable => DbTableQuery;
         public string DbQuery => GetDbQuery(QueryType);
         public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
@@ -212,7 +214,7 @@ namespace NpgsqlMappingGenerator.Utility
             return dbParams.ToString();
         }
 
-        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string dbTable, string joinQuery)
+        public static string CreateDbSelect(string className, AnalyzeDbColumn[] dbQueries, string joinQuery)
             => $$"""
     private static async IAsyncEnumerable<{{className}}> SelectAsync(
         NpgsqlConnection connection,
@@ -252,7 +254,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             sqlBuilder.Append($" {string.Join(",", selectQueries)}");
         }
-        sqlBuilder.Append($" FROM {{dbTable}} {{joinQuery}}");
+        sqlBuilder.Append($" FROM {DbTableQuery} {{joinQuery}}");
         int conditionOrdinal = 0;
         if (where != null)
         {
@@ -392,7 +394,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             var paramName = $"@{Param.DbQuery}{ordinal++}";
             parameterList.Add(Param.CreateParameter(paramName));
-            return $"({Param.DbQuery} {Operator.ToQuery()} {paramName})";
+            return $"({Param.DbTable}.{Param.DbQuery} {Operator.ToQuery()} {paramName})";
         }
     }
 """;
