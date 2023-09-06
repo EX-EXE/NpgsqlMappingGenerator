@@ -105,15 +105,55 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
     [Fact]
     public async Task Select2()
     {
-        foreach(var user in UserList)
+        foreach (var user in UserList)
         {
             await foreach (var row in ViewUser.SelectAsync(
-                Connection, 
+                Connection,
                 ViewUser.DbQueryType.All,
-                where: ViewUser.DbParamUserDataId.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals,user.Id)))
+                where: ViewUser.DbParamUserDataId.CreateCondition(NpgsqlMappingGenerator.DbCompareOperator.Equals, user.Id)))
             {
                 user.Id.Should().Be(row.UserDataId);
             }
+        }
+    }
+
+    [Fact]
+    public async Task SelectOrderAsc()
+    {
+        var sortUserList = UserList.OrderBy(x => x.Id);
+
+        var dbUserIdList = new List<Guid>();
+        await foreach (var row in ViewUser.SelectAsync(
+            Connection,
+            ViewUser.DbQueryType.All,
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, ViewUser.DbQueryType.UserDataId)))
+        {
+            dbUserIdList.Add(row.UserDataId);
+        }
+
+        foreach (var (index, checkId) in UserList.OrderBy(x => x.Id).Select((x, i) => (i, x.Id)))
+        {
+            checkId.Should().Be(dbUserIdList[index]);
+        }
+    }
+
+    [Fact]
+    public async Task SelectOrderDesc()
+    {
+        var sortUserList = UserList.OrderBy(x => x.Id);
+
+        var dbUserIdList = new List<Guid>();
+        await foreach (var row in ViewUser.SelectAsync(
+            Connection,
+            ViewUser.DbQueryType.All,
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Desc, ViewUser.DbQueryType.UserDataId)))
+        {
+            dbUserIdList.Add(row.UserDataId);
+        }
+
+        foreach (var (index, checkId) in UserList.OrderByDescending(x => x.Id).Select((x, i) => (i, x.Id)))
+        {
+            checkId.Should().Be(dbUserIdList[index]);
         }
     }
 }
