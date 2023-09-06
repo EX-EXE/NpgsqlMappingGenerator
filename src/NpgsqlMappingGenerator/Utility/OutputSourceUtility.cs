@@ -159,10 +159,16 @@ namespace NpgsqlMappingGenerator.Utility
     public static readonly DbColumnType[] DbColumnTypes = {
 {{dbColumns.ForEachLines(x => $"DbColumnType.{x.PropertyName},").OutputLine(3)}}
         };
+    public static string GetDbFullQuery(DbQueryType queryType)
+        => queryType switch
+        {
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery(x.DbTableInfo.DbTableQuery)}\",").OutputLine(3)}}
+            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
+        };
     public static string GetDbQuery(DbQueryType queryType)
         => queryType switch
         {
-{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.DbQuery}\",").OutputLine(3)}}
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery()}\",").OutputLine(3)}}
             _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
         };
 """;
@@ -175,8 +181,8 @@ namespace NpgsqlMappingGenerator.Utility
     public interface IDbParam
     {
         DbQueryType QueryType { get; }
-        string DbTable { get; }
         string DbQuery { get; }
+        string DbFullQuery { get; }
         NpgsqlParameter CreateParameter(string paramName);
     }
 """);
@@ -189,8 +195,8 @@ namespace NpgsqlMappingGenerator.Utility
     public class DbParam{{dbColumn.PropertyName}} : IDbParam
     {
         public DbQueryType QueryType => DbQueryType.{{dbColumn.PropertyName}};
-        public string DbTable => "{{dbColumn.DbTableInfo.DbTableQuery}}";
         public string DbQuery => GetDbQuery(QueryType);
+        public string DbFullQuery => GetDbFullQuery(QueryType);
         public {{dbColumn.PropertyType}} Value { get; private set; } = {{defaultValue}};
 
         public static DbCondition CreateCondition(DbCompareOperator compareOperator ,{{dbColumn.PropertyType}} value)
@@ -239,11 +245,11 @@ namespace NpgsqlMappingGenerator.Utility
         {
             if (distinctQueryType.HasFlag(columnQueryTypes))
             {
-                distinctColumnQueries.Add(GetDbQuery(columnQueryTypes));
+                distinctColumnQueries.Add(GetDbFullQuery(columnQueryTypes));
             }
             if (selectColumns.HasFlag(columnQueryTypes))
             {
-                selectQueries.Add($"{{dbTable}}.{GetDbQuery(columnQueryTypes)}");
+                selectQueries.Add(GetDbFullQuery(columnQueryTypes));
             }
         }
         if (0 < distinctColumnQueries.Count)
@@ -394,7 +400,7 @@ namespace NpgsqlMappingGenerator.Utility
         {
             var paramName = $"@{Param.DbQuery}{ordinal++}";
             parameterList.Add(Param.CreateParameter(paramName));
-            return $"({Param.DbTable}.{Param.DbQuery} {Operator.ToQuery()} {paramName})";
+            return $"({Param.DbFullQuery} {Operator.ToQuery()} {paramName})";
         }
     }
 """;

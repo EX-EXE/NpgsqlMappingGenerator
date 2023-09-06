@@ -191,11 +191,15 @@ namespace NpgsqlMappingGenerator.Utility
 
         public string DbColumnName { get; set; } = string.Empty;
         public string DbAggregate { get; private set; } = string.Empty;
-        public string DbQuery
-            => string.IsNullOrEmpty(DbAggregate) ? DbColumnName : $"{DbAggregate}({DbColumnName})";
 
         public string InsertDefault { get; private set; } = string.Empty;
         public string UpdateDefault { get; private set; } = string.Empty;
+
+        public string CreateDbQuery(string dbTable = "")
+        {
+            var column = string.IsNullOrEmpty(dbTable) ? DbColumnName : $"{dbTable}.{DbColumnName}";
+            return string.IsNullOrEmpty(DbAggregate) ? column : $"{DbAggregate}({column})"; ;
+        }
 
         public AnalyzeDbColumn[] AggregateColumns { get; private set; } = Array.Empty<AnalyzeDbColumn>();
 
