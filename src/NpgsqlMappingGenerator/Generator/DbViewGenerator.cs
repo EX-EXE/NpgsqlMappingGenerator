@@ -155,7 +155,7 @@ partial class {{classInfo.Type.ShortName}}
 {{OutputSourceUtility.CreateDbCondition()}}
 {{OutputSourceUtility.CreateDbOrder()}}
 
-{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, dbView.BaseTable.DbTableQuery, dbView.JoinQuery)}}
+{{OutputSourceUtility.CreateDbSelect(classInfo.Type.ShortName, dbQueries, string.Empty, dbView.JoinQuery)}}
 
 }
 
