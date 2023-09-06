@@ -120,40 +120,36 @@ public class ViewSelect : PrepareDataBase, IAsyncLifetime
     [Fact]
     public async Task SelectOrderAsc()
     {
-        var sortUserList = UserList.OrderBy(x => x.Id);
-
-        var dbUserIdList = new List<Guid>();
+        var dbList = new List<string>();
         await foreach (var row in ViewUser.SelectAsync(
             Connection,
             ViewUser.DbQueryType.All,
-            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, ViewUser.DbQueryType.UserDataId)))
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Asc, ViewUser.DbQueryType.UserDataFirstName)))
         {
-            dbUserIdList.Add(row.UserDataId);
+            dbList.Add(row.UserDataFirstName);
         }
 
-        foreach (var (index, checkId) in UserList.OrderBy(x => x.Id).Select((x, i) => (i, x.Id)))
+        foreach (var (index, check) in UserList.OrderBy(x => x.FirstName).Select((x, i) => (i, x.FirstName)))
         {
-            checkId.Should().Be(dbUserIdList[index]);
+            check.Should().Be(dbList[index]);
         }
     }
 
     [Fact]
     public async Task SelectOrderDesc()
     {
-        var sortUserList = UserList.OrderBy(x => x.Id);
-
-        var dbUserIdList = new List<Guid>();
+        var dbList = new List<string>();
         await foreach (var row in ViewUser.SelectAsync(
             Connection,
             ViewUser.DbQueryType.All,
-            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Desc, ViewUser.DbQueryType.UserDataId)))
+            order: new ViewUser.DbOrder(NpgsqlMappingGenerator.DbOrderType.Desc, ViewUser.DbQueryType.UserDataFirstName)))
         {
-            dbUserIdList.Add(row.UserDataId);
+            dbList.Add(row.UserDataFirstName);
         }
 
-        foreach (var (index, checkId) in UserList.OrderByDescending(x => x.Id).Select((x, i) => (i, x.Id)))
+        foreach (var (index, check) in UserList.OrderByDescending(x => x.FirstName).Select((x, i) => (i, x.FirstName)))
         {
-            checkId.Should().Be(dbUserIdList[index]);
+            check.Should().Be(dbList[index]);
         }
     }
 }
