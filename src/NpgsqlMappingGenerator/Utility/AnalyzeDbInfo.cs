@@ -2,6 +2,8 @@
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 
@@ -180,6 +182,136 @@ namespace NpgsqlMappingGenerator.Utility
             return result;
         }
     }
+
+    internal class AnalyzeDbCommand
+    {
+        public class ParamInfo
+        {
+            public string DbParamType { get; set; } = string.Empty;
+            public string ParamType { get; set; } = string.Empty;
+            public string ParamName { get; set; } = string.Empty;
+        }
+
+
+        public AnalyzeClassInfo ClassInfo { get; init; }
+
+        public AnalyzeDbColumn[] DbColumns { get; private set; } =Array.Empty<AnalyzeDbColumn>();
+        public string Command { get; private set; } = string.Empty;
+        public ParamInfo[] ParamInfos { get; private set; } = Array.Empty<ParamInfo>();
+
+        public AnalyzeDbCommand(AnalyzeClassInfo analyzeClassInfo)
+        {
+            ClassInfo = analyzeClassInfo;
+        }
+
+        public static AnalyzeDbCommand Analyze(AnalyzeClassInfo analyzeClassInfo, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var commandAttribute = analyzeClassInfo.Attributes
+                .FirstOrDefault(x => x.Type.FullName.Equals(CommonDefine.DbCommandAttributeFullName,StringComparison.OrdinalIgnoreCase));
+            var paramAttributes = analyzeClassInfo.Attributes
+                .Where(x => x.Type.FullName.Equals(CommonDefine.DbCommandParamAttributeFullName, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            if(commandAttribute == default)
+            {
+                throw new ReportDiagnosticException(
+                    DiagnosticDescriptors.NotFoundAttributeDescriptor,
+                    analyzeClassInfo.Symbol);
+            }
+            if(commandAttribute.ArgumentObjects.Length <= 0)
+            {
+                throw new ReportDiagnosticException(
+                    DiagnosticDescriptors.EmptyParamDescriptor,
+                    analyzeClassInfo.Symbol);
+            }
+
+            var command = commandAttribute.ArgumentObjects[0] as string;
+            if (command == null)
+            {
+                throw new ReportDiagnosticException(
+                    DiagnosticDescriptors.ErrorParamDescriptor,
+                    analyzeClassInfo.Symbol);
+            }
+
+            var paramList = new List<ParamInfo>();
+            foreach (var paramAttribute in paramAttributes)
+            {
+                if(paramAttribute.ArgumentStrings.Length <= 0)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.EmptyParamDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+
+                var genericType = paramAttribute.GenericTypes.FirstOrDefault();
+                if(genericType == default)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.NotFoundTypeDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+
+                var typeSymbol = genericType.Symbol as INamedTypeSymbol;
+                if(typeSymbol == null)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.NotFoundTypeDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+
+                var interfaceSymbol = typeSymbol.Interfaces.FirstOrDefault(x => x.ToTypeFullName(false).Equals(CommonDefine.DbParamInterfaceFullName, StringComparison.OrdinalIgnoreCase));
+                if(interfaceSymbol == null)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.NotFoundTypeDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+                if (interfaceSymbol.TypeArguments.Length <= 0)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.EmptyParamDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+                var interfaceType = interfaceSymbol.TypeArguments[0];
+                var interfaceTypeName = interfaceType.ToTypeFullName(true);
+
+                var paramName = paramAttribute.ArgumentObjects[0] as string;
+                if (paramName == null)
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.ErrorParamDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+
+                if(!command.Contains(paramName))
+                {
+                    throw new ReportDiagnosticException(
+                        DiagnosticDescriptors.NotFoundParamDescriptor,
+                        analyzeClassInfo.Symbol);
+                }
+                paramList.Add(new ParamInfo()
+                {
+                    DbParamType = genericType.FullNameWithGenerics,
+                    ParamType = interfaceTypeName,
+                    ParamName = paramName,
+
+                });
+            }
+
+            // Result
+            return new AnalyzeDbCommand(analyzeClassInfo)
+            {
+                Command = command,
+                ParamInfos = paramList.ToArray(),
+                DbColumns = analyzeClassInfo.Properties.Select(x => AnalyzeDbColumn.Analyze(new AnalyzeDbTable(analyzeClassInfo), x, cancellationToken)).ToArray(),
+            };
+        }
+
+    }
+
+
     internal class AnalyzeDbColumn
     {
         public AnalyzeDbTable DbTableInfo { get; init; }

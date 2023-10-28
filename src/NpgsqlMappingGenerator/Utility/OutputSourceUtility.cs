@@ -135,7 +135,11 @@ namespace NpgsqlMappingGenerator.Utility
                 _ => "ulong"
             };
 
-            return $$"""
+            var builder = new StringBuilder();
+            // DbQueryType
+            if (0 < dbQueries.Length)
+            {
+                builder.AppendLine($$"""
     [Flags]
     public enum DbQueryType : {{enumType}}
     {
@@ -145,6 +149,29 @@ namespace NpgsqlMappingGenerator.Utility
         AllColumns = {{(0 < dbColumns.Length ? dbColumns.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
 {{AppendEnumValues.ForEachLines(x => $"{x.Key} = {x.Value},").OutputLine(2)}}
     }
+
+    public static string GetDbFullQuery(DbQueryType queryType)
+        => queryType switch
+        {
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery(x.DbTableInfo.DbTableQuery)}\",").OutputLine(3)}}
+            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
+        };
+    public static readonly DbQueryType[] DbQueryTypes = {
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName},").OutputLine(3)}}
+        };
+    public static string GetDbQuery(DbQueryType queryType)
+        => queryType switch
+        {
+{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery()}\",").OutputLine(3)}}
+            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
+        };
+""");
+            }
+
+            // dbColumns
+            if (0 < dbColumns.Length)
+            {
+                builder.AppendLine($$"""
     [Flags]
     public enum DbColumnType : {{enumType}}
     {
@@ -153,25 +180,12 @@ namespace NpgsqlMappingGenerator.Utility
         All = {{(0 < dbColumns.Length ? dbColumns.ForEachLines(x => x.PropertyName).OutputLine("|") : "0")}},
 {{AppendEnumValues.ForEachLines(x => $"{x.Key} = {x.Value},").OutputLine(2)}}
     }
-    public static readonly DbQueryType[] DbQueryTypes = {
-{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName},").OutputLine(3)}}
-        };
     public static readonly DbColumnType[] DbColumnTypes = {
 {{dbColumns.ForEachLines(x => $"DbColumnType.{x.PropertyName},").OutputLine(3)}}
         };
-    public static string GetDbFullQuery(DbQueryType queryType)
-        => queryType switch
-        {
-{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery(x.DbTableInfo.DbTableQuery)}\",").OutputLine(3)}}
-            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
-        };
-    public static string GetDbQuery(DbQueryType queryType)
-        => queryType switch
-        {
-{{dbQueries.ForEachLines(x => $"DbQueryType.{x.PropertyName} => \"{x.CreateDbQuery()}\",").OutputLine(3)}}
-            _ => throw new NotImplementedException($"{nameof(queryType)} : {queryType}"),
-        };
-""";
+""");
+            }
+            return builder.ToString();
         }
 
         public static string CreateDbParam(AnalyzeDbColumn[] dbColumns)

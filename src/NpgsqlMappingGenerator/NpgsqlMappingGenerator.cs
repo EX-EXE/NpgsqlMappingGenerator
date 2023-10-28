@@ -23,6 +23,7 @@ public partial class NpgsqlMappingGenerator : IIncrementalGenerator
             CommonDefine.GenerateDbParam(context);
             DbTableGenerator.GenerateAttribute(context);
             DbViewGenerator.GenerateAttribute(context);
+            DbCommandGenerator.GenerateAttribute(context);
         });
 
         // DbTable Hook
@@ -38,5 +39,13 @@ public partial class NpgsqlMappingGenerator : IIncrementalGenerator
         static (node, token) => true,
         static (context, token) => context);
         context.RegisterSourceOutput(dbViewSource, DbViewGenerator.GenerateSource);
+
+        // DbCommand Hook
+        var dbCommandSource = context.SyntaxProvider.ForAttributeWithMetadataName(
+        CommonDefine.DbCommandAttributeFullName,
+        static (node, token) => true,
+        static (context, token) => context);
+        context.RegisterSourceOutput(dbCommandSource, DbCommandGenerator.GenerateSource);
+
     }
 }

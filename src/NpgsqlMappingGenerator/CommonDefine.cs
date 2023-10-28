@@ -71,6 +71,15 @@ namespace NpgsqlMappingGenerator
                 DbViewFullOuterJoinAttributeFullName ,
             };
 
+
+        //! [Command]
+        public static readonly string DbCommandAttributeName = "DbCommandAttribute";
+        public static readonly string DbCommandAttributeFullName = $"{Namespace}.{DbCommandAttributeName}";
+
+        //! [Command Param]
+        public static readonly string DbCommandParamAttributeName = "DbCommandParamAttribute";
+        public static readonly string DbCommandParamAttributeFullName = $"{Namespace}.{DbCommandParamAttributeName}";
+
         //! [Aggregate]
         public static readonly string DbAggregateAttributeName = "DbAggregateAttribute";
         public static readonly string DbAggregateAttributeFullName = $"{Namespace}.{DbAggregateAttributeName}";
@@ -103,6 +112,10 @@ namespace NpgsqlMappingGenerator
         public static readonly string DbAppendTypeName_Prepend = "Prepend";
         public static readonly int DbAppendTypeValue_Append = 1 << 0;
         public static readonly int DbAppendTypeValue_Prepend = 1 << 1;
+
+        //! [IDbParam]
+        public static readonly string DbParamInterfaceName = "IDbParam";
+        public static readonly string DbParamInterfaceFullName = $"{Namespace}.{DbParamInterfaceName}";
 
         public static void GenerateDbBase(IncrementalGeneratorPostInitializationContext context)
         {
@@ -342,6 +355,16 @@ public enum {{CommonDefine.DbAppendTypeName}}
         private record DbParamTypeInfo(string ClassSuffixName, string TypeName, string ReaderFuncName);
         public static void GenerateDbParam(IncrementalGeneratorPostInitializationContext context)
         {
+            // IDbParam
+            context.AddSource($"{Namespace}.{DbParamInterfaceName}.cs", $$"""
+using System;
+using Npgsql;
+namespace {{Namespace}};
+public interface {{DbParamInterfaceName}}<ParamType>
+{
+}
+""");
+
             foreach (var typeInfo in new[] {
                 new DbParamTypeInfo("Boolean", "bool", "GetBoolean") ,
                 new DbParamTypeInfo("Byte", "byte", "GetByte") ,
@@ -356,12 +379,13 @@ public enum {{CommonDefine.DbAppendTypeName}}
                 new DbParamTypeInfo("Guid", "Guid", "GetGuid") ,
                 })
             {
+
                 // DbCompareOperator
                 context.AddSource($"{Namespace}.DbParam{typeInfo.ClassSuffixName}.cs", $$"""
 using System;
 using Npgsql;
 namespace {{Namespace}};
-public class DbParamNullable{{typeInfo.ClassSuffixName}}
+public class DbParamNullable{{typeInfo.ClassSuffixName}} : IDbParam<{{typeInfo.TypeName}}>
 {
     public static {{typeInfo.TypeName}}? ReadData(NpgsqlDataReader reader, int ordinal)
         => reader.IsDBNull(ordinal) ? null : reader.{{typeInfo.ReaderFuncName}}(ordinal); 
@@ -378,7 +402,7 @@ public class DbParamNullable{{typeInfo.ClassSuffixName}}
         }
     }
 }
-public class DbParam{{typeInfo.ClassSuffixName}}
+public class DbParam{{typeInfo.ClassSuffixName}} : IDbParam<{{typeInfo.TypeName}}>
 {
     public static {{typeInfo.TypeName}} ReadData(NpgsqlDataReader reader, int ordinal)
     {
@@ -401,7 +425,7 @@ public class DbParam{{typeInfo.ClassSuffixName}}
 using System;
 using Npgsql;
 namespace {{Namespace}};
-public class DbParamNullableString
+public class DbParamNullableString : IDbParam<string?>
 {
     public static string? ReadData(NpgsqlDataReader reader, int ordinal)
         => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal); 
@@ -418,7 +442,7 @@ public class DbParamNullableString
         }
     }
 }
-public class DbParamString
+public class DbParamString : IDbParam<string>
 {
     public static string ReadData(NpgsqlDataReader reader, int ordinal)
     {
@@ -440,7 +464,7 @@ public class DbParamString
 using System;
 using Npgsql;
 namespace {{Namespace}};
-public class DbParamNullableDateTimeUtc
+public class DbParamNullableDateTimeUtc : IDbParam<DateTime?>
 {
     public static DateTime? ReadData(NpgsqlDataReader reader, int ordinal)
     {
@@ -465,7 +489,7 @@ public class DbParamNullableDateTimeUtc
         }
     }
 }
-public class DbParamDateTimeUtc
+public class DbParamDateTimeUtc : IDbParam<DateTime>
 {
     public static DateTime ReadData(NpgsqlDataReader reader, int ordinal)
     {
@@ -487,7 +511,7 @@ public class DbParamDateTimeUtc
 using System;
 using Npgsql;
 namespace {{Namespace}};
-public class DbParamNullableDateTimeOffset
+public class DbParamNullableDateTimeOffset : IDbParam<DateTimeOffset?>
 {
     public static DateTimeOffset? ReadData(NpgsqlDataReader reader, int ordinal)
     {
@@ -512,7 +536,7 @@ public class DbParamNullableDateTimeOffset
         }
     }
 }
-public class DbParamDateTimeOffset
+public class DbParamDateTimeOffset : IDbParam<DateTimeOffset>
 {
     public static DateTimeOffset ReadData(NpgsqlDataReader reader, int ordinal)
     {
