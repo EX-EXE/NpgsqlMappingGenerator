@@ -3,12 +3,14 @@
 Generate a function that uses Npgsql.  
 For example Select/Insert/Update/Delete functions.
 
-## Quick Start
+## Install
 ### Install Npgsql
 PM> Install-Package [Npgsql](https://www.nuget.org/packages/Npgsql/)
 
 ### Install NpgsqlMappingGenerator
 PM> Install-Package [NpgsqlMappingGenerator](https://www.nuget.org/packages/NpgsqlMappingGenerator/)
+
+## Example
 
 ### Define DbTable
 ```csharp
@@ -30,7 +32,7 @@ public partial class User
     public DateTime LastUpdate { get; set; }
 }
 ```
-### Usage
+#### Usage
 ```csharp
 // Insert
 foreach(var lastName in new[] { "One","Two","Three"})
@@ -123,7 +125,7 @@ public partial class UserType
 }
 ```
 
-### Usage
+#### Usage
 ```csharp
 // Insert TestData
 foreach (var type in new[] { "TypeOne", "TypeTwo", "TypeThree" })
@@ -165,6 +167,43 @@ await foreach (var userViewRow in UserView.SelectAsync(
     Console.WriteLine($"{userViewRow.UserFirstName} {userViewRow.UserLastName} {userViewRow.UserTypeName}");
 }
 ```
+## DbCommand
+```csharp
+[DbCommand(
+    "SELECT public.userdata.id as userid, public.userdata.first_name as first_name, public.userdata.last_name as last_name, public.authority_type.name as authority_name , public.authority_type.id as authorityid " +
+    "FROM public.user_authority " +
+    "JOIN public.userdata ON public.userdata.id = public.user_authority.user_data_id " +
+    "JOIN public.authority_type ON public.authority_type.id = public.user_authority.authority_type_id ")]
+public partial class ViewUserAuthority
+{
+    [DbColumn<DbParamGuid>("userid")]
+    public Guid UserId { get; set; }
+
+    [DbColumn<DbParamGuid>("authorityid")]
+    public Guid AuthorityId { get; set; }
+
+    [DbColumn<DbParamString>("first_name")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [DbColumn<DbParamString>("last_name")]
+    public string LastName { get; set; } = string.Empty;
+
+    [DbColumn<DbParamString>("authority_name")]
+    public string AuthorityName { get; set; } = string.Empty;
+}
+```
+#### Usage
+```csharp
+await foreach (var row in ViewUserAuthority.ExecuteAsync(Connection, ViewUserAuthority.DbQueryType.All))
+{
+    var userData = UserList.First(x => x.Id == row.UserId);
+    var typeData = AuthorityTypeList.First(x => x.Id == row.AuthorityId);
+    userData.FirstName.Should().Be(row.FirstName);
+    userData.LastName.Should().Be(row.LastName);
+    typeData.Name.Should().Be(row.AuthorityName);
+}
+```
+
 
 ## DbTable Attribute
 | Attribute | Description |
