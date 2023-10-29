@@ -131,6 +131,20 @@ partial class {{classInfo.Type.ShortName}}
             yield return result;
         }
     }
+
+    public static async ValueTask<int> ExecuteNonQueryAsync(
+        NpgsqlConnection connection,
+{{commandInfo.ParamInfos.ForEachLines(paramInfo => $"{paramInfo.ParamType} {paramInfo.ParamName},").OutputLine(2)}}
+        CancellationToken cancellationToken = default)
+    {
+        await using var command = new NpgsqlCommand("{{commandInfo.Command}}", connection);
+{{commandInfo.ParamInfos.ForEachLines(paramInfo => $"command.Parameters.Add({paramInfo.DbParamType}.CreateParameter(\"{paramInfo.ParamName}\", {paramInfo.ParamName}));").OutputLine(2)}}
+        await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
+
+        var result = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
 }
 
 """;
