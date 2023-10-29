@@ -12,7 +12,7 @@ PM> Install-Package [NpgsqlMappingGenerator](https://www.nuget.org/packages/Npgs
 
 ## Example
 
-### Define DbTable
+### DbTable
 ```csharp
 [DbTableGenerator("public.user")]
 public partial class User
@@ -76,7 +76,7 @@ await User.DeleteAsync(conn,
 ```
 
 
-### Define DbView
+### DbView
 ```csharp
 [DbViewGenerator]
 [DbViewTable<User>]
@@ -172,8 +172,9 @@ await foreach (var userViewRow in UserView.SelectAsync(
 [DbCommand(
     "SELECT public.userdata.id as userid, public.userdata.first_name as first_name, public.userdata.last_name as last_name, public.authority_type.name as authority_name , public.authority_type.id as authorityid " +
     "FROM public.user_authority " +
-    "JOIN public.userdata ON public.userdata.id = public.user_authority.user_data_id " +
+    "JOIN public.userdata ON public.userdata.id = public.user_authority.user_data_id AND public.userdata.id = @param_userid " +
     "JOIN public.authority_type ON public.authority_type.id = public.user_authority.authority_type_id ")]
+[DbCommandParam<DbParamGuid>("@param_userid")]
 public partial class ViewUserAuthority
 {
     [DbColumn<DbParamGuid>("userid")]
@@ -194,13 +195,16 @@ public partial class ViewUserAuthority
 ```
 #### Usage
 ```csharp
-await foreach (var row in ViewUserAuthority.ExecuteAsync(Connection, ViewUserAuthority.DbQueryType.All))
+await foreach (var row in ViewUserAuthority.ExecuteAsync(
+    Connection, 
+    ViewUserAuthority.DbQueryType.All, 
+    param_userid: user.Id))
 {
-    var userData = UserList.First(x => x.Id == row.UserId);
-    var typeData = AuthorityTypeList.First(x => x.Id == row.AuthorityId);
-    userData.FirstName.Should().Be(row.FirstName);
-    userData.LastName.Should().Be(row.LastName);
-    typeData.Name.Should().Be(row.AuthorityName);
+    // row.UserId
+    // row.AuthorityId
+    // row.FirstName
+    // row.LastName
+    // row.AuthorityName
 }
 ```
 
