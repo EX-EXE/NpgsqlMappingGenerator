@@ -102,4 +102,28 @@ public class CommandSelect : PrepareDataBase, IAsyncLifetime
             typeData.Name.Should().Be(row.AuthorityName);
         }
     }
+
+
+    [Fact]
+    public async Task SelectOn()
+    {
+        foreach (var user in UserList)
+        {
+            var userAuthoritieIds = UserAuthorityList.Where(x => x.UserDataId == user.Id).Select(x => x.AuthorityTypeId).ToArray();
+            var authorityTypeList = AuthorityTypeList.Where(x => userAuthoritieIds.Contains(x.Id)).ToList();
+
+            await foreach (var row in ViewUserAuthorityOn.ExecuteAsync(Connection, ViewUserAuthorityOn.DbQueryType.All, user.Id))
+            {
+                user.Id.Should().Be(row.UserId);
+                user.FirstName.Should().Be(row.FirstName);
+                user.LastName.Should().Be(row.LastName);
+
+                var find = authorityTypeList.First(x => x.Id == row.AuthorityId);
+                find.Name.Should().Be(row.AuthorityName);
+                authorityTypeList.Remove(find);
+            }
+            authorityTypeList.Count.Should().Be(0);
+        }
+    }
+
 }
