@@ -113,7 +113,7 @@ partial class {{classInfo.Type.ShortName}}
 {{commandInfo.ParamInfos.ForEachLines(paramInfo => $"{paramInfo.ParamType} {paramInfo.ParamName},").OutputLine(2)}}
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var command = new NpgsqlCommand("{{commandInfo.Command}}", connection);
+        await using var command = new NpgsqlCommand({{commandInfo.Command}}, connection);
 {{commandInfo.ParamInfos.ForEachLines(paramInfo => $"command.Parameters.Add({paramInfo.DbParamType}.CreateParameter(\"{paramInfo.ParamName}\", {paramInfo.ParamName}));").OutputLine(2)}}
         await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
 
@@ -137,7 +137,7 @@ partial class {{classInfo.Type.ShortName}}
 {{commandInfo.ParamInfos.ForEachLines(paramInfo => $"{paramInfo.ParamType} {paramInfo.ParamName},").OutputLine(2)}}
         CancellationToken cancellationToken = default)
     {
-        await using var command = new NpgsqlCommand("{{commandInfo.Command}}", connection);
+        await using var command = new NpgsqlCommand({{commandInfo.Command}}, connection);
 {{commandInfo.ParamInfos.ForEachLines(paramInfo => $"command.Parameters.Add({paramInfo.DbParamType}.CreateParameter(\"{paramInfo.ParamName}\", {paramInfo.ParamName}));").OutputLine(2)}}
         await command.PrepareAsync(cancellationToken).ConfigureAwait(false);
 
