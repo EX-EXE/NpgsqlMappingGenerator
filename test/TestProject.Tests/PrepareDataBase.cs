@@ -21,8 +21,8 @@ namespace TestProject.Tests
             {
                 OutputHelper.WriteLine($"Use Env.");
                 host = Environment.GetEnvironmentVariable("host");
-                user = Environment.GetEnvironmentVariable("user");
-                pass = Environment.GetEnvironmentVariable("pass");
+                user = Environment.GetEnvironmentVariable("dbuser");
+                pass = Environment.GetEnvironmentVariable("dbpass");
                 database = Environment.GetEnvironmentVariable("database");
             }
             OutputHelper.WriteLine($"Host : {host}");
