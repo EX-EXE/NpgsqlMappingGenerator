@@ -220,14 +220,14 @@ namespace NpgsqlMappingGenerator.Utility
                     DiagnosticDescriptors.NotFoundAttributeDescriptor,
                     analyzeClassInfo.Symbol);
             }
-            if(commandAttribute.ArgumentObjects.Length <= 0)
+            if(commandAttribute.ArgumentStrings.Length <= 0)
             {
                 throw new ReportDiagnosticException(
                     DiagnosticDescriptors.EmptyParamDescriptor,
                     analyzeClassInfo.Symbol);
             }
 
-            var command = commandAttribute.ArgumentObjects[0] as string;
+            var command = commandAttribute.ArgumentStrings[0] as string;
             if (command == null)
             {
                 throw new ReportDiagnosticException(
