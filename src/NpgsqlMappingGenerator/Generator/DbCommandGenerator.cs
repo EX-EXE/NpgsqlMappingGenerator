@@ -42,7 +42,7 @@ internal sealed class {{CommonDefine.DbCommandAttributeName}} : Attribute
         context.AddSource($"{CommonDefine.DbCommandParamAttributeFullName}.cs", $$"""
 namespace {{CommonDefine.Namespace}};
 using System;
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 internal sealed class {{CommonDefine.DbCommandParamAttributeName}}<ParamClass> : Attribute
 {
     public {{CommonDefine.DbCommandParamAttributeName}}(string name)
